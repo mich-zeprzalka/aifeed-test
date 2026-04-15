@@ -6,24 +6,17 @@ import { useState } from "react";
 import { Menu, Search, X } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { siteConfig } from "@/config/site";
-
-const TICKER_ITEMS = [
-  { title: "Claude 4 Opus przełamuje bariery rozumowania i generowania kodu", slug: "claude-4-opus-reasoning-code-generation" },
-  { title: "Google DeepMind prezentuje Gemini Ultra 2.0 z rozumieniem wideo", slug: "google-deepmind-gemini-ultra-2-video" },
-  { title: "Open Source dorównuje GPT-4o — Llama 4 zmienia reguły gry", slug: "llama-4-matches-gpt4o-open-source" },
-  { title: "Cursor 2.0 redefiniuje programowanie z AI", slug: "cursor-2-multi-agent-workflows" },
-  { title: "AI odkrywa nowy antybiotyk na superbakterie", slug: "ai-discovers-antibiotic-drug-resistant" },
-];
+import { SearchModal } from "./search-modal";
 
 const NAV_LINKS = [
   { name: "Najnowsze", href: "/" },
-  { name: "Wyszukiwarka", href: "/search" },
   { name: "RSS", href: "/feed.xml" },
 ];
 
-export function Header() {
+export function Header({ tickerItems }: { tickerItems: { title: string; slug: string }[] }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <>
@@ -36,16 +29,16 @@ export function Header() {
               className="animate-marquee flex items-center whitespace-nowrap"
               aria-hidden={copy === 1 || undefined}
             >
-              {TICKER_ITEMS.map((item, i) => (
-                <span key={i} className="contents">
+              {tickerItems.map((item, i) => (
+                <span key={i} className="flex items-center">
                   <Link
                     href={`/article/${item.slug}`}
-                    className="px-3 py-1.5 text-[11px] text-background/70 hover:text-background transition-colors"
+                    className="px-2 py-1.5 text-[11px] text-background/70 hover:text-background transition-colors"
                     tabIndex={copy === 1 ? -1 : undefined}
                   >
                     {item.title}
                   </Link>
-                  <span className="text-background/30 text-[8px]">&bull;</span>
+                  <span className="text-background/30 text-[8px] mx-1">&bull;</span>
                 </span>
               ))}
             </div>
@@ -85,13 +78,13 @@ export function Header() {
 
           {/* Right actions */}
           <div className="flex items-center gap-1">
-            <Link
-              href="/search"
+            <button
+              onClick={() => setSearchOpen(true)}
               aria-label="Szukaj"
               className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <Search className="size-[15px]" />
-            </Link>
+            </button>
             <ThemeToggle />
 
             <button
@@ -143,6 +136,8 @@ export function Header() {
           </div>
         )}
       </header>
+
+      <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
     </>
   );
 }

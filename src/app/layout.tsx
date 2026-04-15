@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
 import { siteConfig } from "@/config/site";
+import { getTickerArticles } from "@/lib/data";
 import "./globals.css";
 
 const inter = Inter({
@@ -52,11 +53,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const tickerItems = await getTickerArticles(10);
+
   return (
     <html
       lang="pl"
@@ -72,7 +75,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground">
         <ScrollToTop />
-        <Header />
+        <Header tickerItems={tickerItems} />
         <main className="flex-1">{children}</main>
         <Footer />
       </body>

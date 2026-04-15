@@ -161,6 +161,17 @@ export async function getSitemapArticles(limit = 5000): Promise<{ slug: string; 
   return data || [];
 }
 
+export async function getTickerArticles(limit = 10): Promise<{ title: string; slug: string }[]> {
+  const { data } = await supabase
+    .from("articles")
+    .select("title, slug")
+    .eq("is_published", true)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+
+  return data || [];
+}
+
 // ===================== HELPERS =====================
 
 async function attachTags(article: Article & { category: Category | null }): Promise<ArticleWithRelations> {
