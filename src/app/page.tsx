@@ -59,9 +59,9 @@ export default async function HomePage() {
               <Link
                 key={tag.id}
                 href={`/search?q=${encodeURIComponent(tag.name)}`}
-                className="shrink-0 rounded-full border border-border/50 bg-muted/30 px-3 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/60 transition-colors"
+                className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
-                {tag.name}
+                <span className="text-primary/60 mr-0.5">#</span>{tag.name}
               </Link>
             ))}
           </div>

@@ -33,12 +33,12 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
                 <span key={i} className="flex items-center">
                   <Link
                     href={`/article/${item.slug}`}
-                    className="px-2 py-1.5 text-[11px] text-background/70 hover:text-background transition-colors"
+                    className="py-1.5 pl-2 pr-1.5 text-[11px] text-background/70 hover:text-background transition-colors"
                     tabIndex={copy === 1 ? -1 : undefined}
                   >
                     {item.title}
                   </Link>
-                  <span className="text-background/30 text-[8px] mx-1">&bull;</span>
+                  <span className="text-background/30 text-[8px]">&bull;</span>
                 </span>
               ))}
             </div>
