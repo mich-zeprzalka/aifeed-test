@@ -157,8 +157,7 @@
 @utility animate-marquee {
   animation: marquee 60s linear infinite;
   display: inline-flex;
-  gap: 1.5rem;
-  padding-right: 1.5rem;
+  align-items: center;
   will-change: transform;
 }
 

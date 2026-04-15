@@ -30,15 +30,15 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
               aria-hidden={copy === 1 || undefined}
             >
               {tickerItems.map((item, i) => (
-                <span key={i} className="inline-flex items-center">
+                <span key={i} className="contents">
                   <Link
                     href={`/article/${item.slug}`}
-                    className="py-1.5 text-[11px] text-background/70 hover:text-background transition-colors"
+                    className="shrink-0 py-1.5 text-[11px] text-background/70 hover:text-background transition-colors"
                     tabIndex={copy === 1 ? -1 : undefined}
                   >
                     {item.title}
                   </Link>
-                  <span className="text-background/30 text-[8px] mx-[6px]">&bull;</span>
+                  <span className="shrink-0 text-background/30 text-[8px] mx-[6px]" aria-hidden="true">&bull;</span>
                 </span>
               ))}
             </div>
@@ -64,11 +64,10 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                    active
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`relative rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${active
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   {link.name}
                 </Link>
@@ -110,11 +109,10 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
                       key={cat.slug}
                       href={href}
                       onClick={() => setMobileOpen(false)}
-                      className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                        active
-                          ? "bg-muted text-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      }`}
+                      className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${active
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        }`}
                     >
                       {cat.name}
                     </Link>
