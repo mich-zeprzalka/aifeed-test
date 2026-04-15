@@ -42,8 +42,10 @@ export async function POST(request: NextRequest) {
       return Response.json({ message: "No new items to process", generated: 0 });
     }
 
-    // Step 3: Select top articles (1 for cost testing)
-    const topItems = selectTopArticles(newItems, 1);
+    // Step 3: Select top articles (configurable via ?count=N, default 1)
+    const url = new URL(request.url);
+    const count = Math.min(parseInt(url.searchParams.get("count") || "1", 10) || 1, 10);
+    const topItems = selectTopArticles(newItems, count);
 
     // Step 4: Generate articles
     const generated: string[] = [];
@@ -56,7 +58,31 @@ export async function POST(request: NextRequest) {
         const sourceContent = await scrapeArticleContent(item.url);
         console.log(`[Source content] ${sourceContent.length} chars from ${item.url}`);
 
+        if (sourceContent.length < 100) {
+          console.warn(`[Pipeline] Skipping "${item.title}" — source content too short or unreadable`);
+          // Still mark as processed so we don't retry bad URLs
+          await supabase.from("scraped_items").upsert(
+            { source_url: item.url, title: item.title, description: item.description, source_name: item.sourceName, is_processed: true },
+            { onConflict: "source_url" }
+          );
+          continue;
+        }
+
         const article = await generateArticle(item.title, [item.url], [item.description], sourceContent);
+
+        // Validate AI response — reject refusals and garbage
+        const refusalPatterns = ["nie można przetworzyć", "nie mogę", "brak treści", "brak czytelnej"];
+        const isRefusal = refusalPatterns.some((p) => article.content.toLowerCase().includes(p));
+        const tooShort = article.content.split(/\s+/).length < 100;
+
+        if (isRefusal || tooShort) {
+          console.warn(`[Pipeline] AI refused or produced too little for "${item.title}", skipping`);
+          await supabase.from("scraped_items").upsert(
+            { source_url: item.url, title: item.title, description: item.description, source_name: item.sourceName, is_processed: true },
+            { onConflict: "source_url" }
+          );
+          continue;
+        }
 
         // Ensure the original source URL is always in source_urls
         const sourceUrls = [item.url];

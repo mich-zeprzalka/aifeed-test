@@ -167,7 +167,21 @@ export default async function ArticlePage({ params }: PageProps) {
       {/* Article content */}
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="prose-article">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: ({ href, children, ...props }) => (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  {...props}
+                >
+                  {children}
+                </a>
+              ),
+            }}
+          >
             {article.content}
           </ReactMarkdown>
         </div>

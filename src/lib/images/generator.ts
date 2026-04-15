@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const IMAGE_MODEL = "black-forest-labs/flux.2-klein-4b";
+const IMAGE_MODEL = "google/gemini-2.5-flash-image";
 
 export interface ThumbnailResult {
   url: string;
@@ -126,7 +126,15 @@ async function generateAIImage(title: string): Promise<string | null> {
     return null;
   }
 
-  const prompt = `Professional editorial illustration for an AI technology news article titled: "${title}". Style: modern digital art, clean composition, abstract tech visualization with neural network patterns or futuristic elements. Premium tech magazine aesthetic. No text, no words, no logos, no watermarks.`;
+  const prompt = `Generate a professional, visually striking editorial illustration for a technology news article titled: "${title}".
+
+Requirements:
+- Modern, premium magazine-quality digital artwork
+- Landscape orientation (16:9 aspect ratio)
+- Clean composition with strong visual focus
+- Abstract or conceptual representation of the topic
+- Rich color palette, professional lighting
+- Absolutely NO text, words, letters, logos, or watermarks anywhere in the image`;
 
   try {
     const res = await fetch(OPENROUTER_API_URL, {
@@ -141,9 +149,9 @@ async function generateAIImage(title: string): Promise<string | null> {
       body: JSON.stringify({
         model: IMAGE_MODEL,
         messages: [{ role: "user", content: prompt }],
-        modalities: ["image"],
+        modalities: ["image", "text"],
       }),
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(90_000),
     });
 
     if (!res.ok) {

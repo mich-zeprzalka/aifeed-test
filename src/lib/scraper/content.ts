@@ -21,7 +21,20 @@ export async function scrapeArticleContent(url: string): Promise<string> {
       return "";
     }
 
+    // Reject non-HTML responses (PDFs, images, binaries)
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
+      console.warn(`[Content Scraper] Skipping non-HTML content-type: ${contentType} for ${url}`);
+      return "";
+    }
+
     let html = await res.text();
+
+    // Detect binary/PDF content that slipped through
+    if (html.startsWith("%PDF") || html.includes("endobj") || html.includes("endstream")) {
+      console.warn(`[Content Scraper] PDF binary detected for ${url}`);
+      return "";
+    }
 
     // ---- Strip non-content elements ----
     html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
@@ -79,9 +92,20 @@ export async function scrapeArticleContent(url: string): Promise<string> {
       text = text.slice(0, MAX_CHARS) + "\n\n[treść skrócona]";
     }
 
-    console.log(
-      `[Content Scraper] Extracted ${text.length} chars from ${url}`
-    );
+    // Validate text is actually readable (not garbled binary)
+    if (text.length < 100) {
+      console.warn(`[Content Scraper] Too short (${text.length} chars) for ${url}`);
+      return "";
+    }
+
+    // Check ratio of printable characters — reject garbled content
+    const printable = text.replace(/[^\x20-\x7E\u00A0-\u024F\u0400-\u04FF\n]/g, "");
+    if (printable.length / text.length < 0.7) {
+      console.warn(`[Content Scraper] Low readability ratio for ${url}, likely binary`);
+      return "";
+    }
+
+    console.log(`[Content Scraper] Extracted ${text.length} chars from ${url}`);
     return text;
   } catch (error) {
     console.warn(`[Content Scraper] Failed for ${url}:`, error);
