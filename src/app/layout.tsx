@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { ScrollToTop } from "@/components/layout/scroll-to-top";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
 
@@ -70,6 +71,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground">
+        <ScrollToTop />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
