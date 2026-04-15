@@ -176,12 +176,13 @@ export default async function ArticlePage({ params }: PageProps) {
         {article.tags && article.tags.length > 0 && (
           <div className="mt-12 flex flex-wrap items-center gap-2">
             {article.tags.map((tag) => (
-              <span
+              <Link
                 key={tag.id}
-                className="rounded-md border border-border/50 bg-muted/30 px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground"
+                href={`/tag/${tag.slug}`}
+                className="rounded-md border border-border/50 bg-muted/30 px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
               >
                 {tag.name}
-              </span>
+              </Link>
             ))}
           </div>
         )}

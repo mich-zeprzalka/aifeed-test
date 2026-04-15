@@ -172,6 +172,46 @@ export async function getTickerArticles(limit = 10): Promise<{ title: string; sl
   return data || [];
 }
 
+// ===================== TAG PAGES =====================
+
+export async function getTagBySlug(slug: string): Promise<Tag | null> {
+  const { data } = await supabase
+    .from("tags")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+
+  return data || null;
+}
+
+export async function getArticlesByTag(tagSlug: string): Promise<ArticleWithRelations[]> {
+  // First get the tag
+  const tag = await getTagBySlug(tagSlug);
+  if (!tag) return [];
+
+  // Get article IDs assigned to this tag
+  const { data: articleTagRows } = await supabase
+    .from("article_tags")
+    .select("article_id")
+    .eq("tag_id", tag.id);
+
+  if (!articleTagRows || articleTagRows.length === 0) return [];
+
+  const articleIds = articleTagRows.map((r) => r.article_id);
+
+  // Fetch full articles
+  const { data: articles } = await supabase
+    .from("articles")
+    .select("*, category:categories(*)")
+    .eq("is_published", true)
+    .in("id", articleIds)
+    .order("published_at", { ascending: false });
+
+  if (!articles || articles.length === 0) return [];
+
+  return Promise.all(articles.map(attachTags));
+}
+
 // ===================== HELPERS =====================
 
 async function attachTags(article: Article & { category: Category | null }): Promise<ArticleWithRelations> {

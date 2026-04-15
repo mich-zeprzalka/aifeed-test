@@ -58,7 +58,7 @@ export default async function HomePage() {
             {trendingTags.map((tag) => (
               <Link
                 key={tag.id}
-                href={`/search?q=${encodeURIComponent(tag.name)}`}
+                href={`/tag/${tag.slug}`}
                 className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 <span className="text-primary/60 mr-0.5">#</span>{tag.name}
