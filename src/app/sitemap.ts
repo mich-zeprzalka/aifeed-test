@@ -1,11 +1,11 @@
-import { getArticles, getCategories } from "@/lib/data";
+import { getSitemapArticles, getCategories } from "@/lib/data";
 import { siteConfig } from "@/config/site";
 import type { MetadataRoute } from "next";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteConfig.url;
   const [articles, categories] = await Promise.all([
-    getArticles(100),
+    getSitemapArticles(5000),
     getCategories(),
   ]);
 

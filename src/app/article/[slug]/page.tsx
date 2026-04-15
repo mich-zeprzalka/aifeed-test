@@ -6,6 +6,8 @@ import { getArticleBySlug, getArticles } from "@/lib/data";
 import { ArticleCard } from "@/components/articles/article-card";
 import { siteConfig } from "@/config/site";
 import type { Metadata } from "next";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export const revalidate = 60;
 
@@ -32,6 +34,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: "summary_large_image",
       title: article.title,
       description: article.excerpt,
+    },
+    alternates: {
+      canonical: `/article/${article.slug}`,
     },
   };
 }
@@ -161,7 +166,11 @@ export default async function ArticlePage({ params }: PageProps) {
 
       {/* Article content */}
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <div className="prose-article">{renderMarkdown(article.content)}</div>
+        <div className="prose-article">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {article.content}
+          </ReactMarkdown>
+        </div>
 
         {/* Tags */}
         {article.tags && article.tags.length > 0 && (
@@ -222,139 +231,3 @@ export default async function ArticlePage({ params }: PageProps) {
   );
 }
 
-// Markdown-to-JSX renderer
-function renderMarkdown(content: string) {
-  const lines = content.split("\n");
-  const elements: React.ReactNode[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // Match headings: # through ######
-    const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
-    if (headingMatch) {
-      const level = headingMatch[1].length;
-      const text = headingMatch[2];
-      // Render h1 content as h2 (page already has h1 for title)
-      const Tag = level <= 2 ? "h2" : "h3";
-      elements.push(<Tag key={i}>{processInline(text)}</Tag>);
-      i++;
-      continue;
-    }
-
-    if (line.startsWith("> ")) {
-      const quoteLines: string[] = [];
-      while (i < lines.length && lines[i].startsWith("> ")) {
-        quoteLines.push(lines[i].slice(2));
-        i++;
-      }
-      elements.push(
-        <blockquote key={i}>
-          {quoteLines.map((l, j) => (
-            <p key={j}>{processInline(l)}</p>
-          ))}
-        </blockquote>
-      );
-      continue;
-    }
-
-    if (line.startsWith("- ")) {
-      const listItems: string[] = [];
-      while (i < lines.length && lines[i].startsWith("- ")) {
-        listItems.push(lines[i].slice(2));
-        i++;
-      }
-      elements.push(
-        <ul key={i}>
-          {listItems.map((item, j) => (
-            <li key={j}>{processInline(item)}</li>
-          ))}
-        </ul>
-      );
-      continue;
-    }
-
-    if (/^\d+\.\s/.test(line)) {
-      const listItems: string[] = [];
-      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
-        listItems.push(lines[i].replace(/^\d+\.\s/, ""));
-        i++;
-      }
-      elements.push(
-        <ol key={i}>
-          {listItems.map((item, j) => (
-            <li key={j}>{processInline(item)}</li>
-          ))}
-        </ol>
-      );
-      continue;
-    }
-
-    if (line.trim() === "---") {
-      elements.push(<hr key={i} />);
-      i++;
-      continue;
-    }
-
-    if (line.trim() === "") {
-      i++;
-      continue;
-    }
-
-    const paraLines: string[] = [];
-    while (
-      i < lines.length &&
-      lines[i].trim() !== "" &&
-      !lines[i].startsWith("#") &&
-      !lines[i].startsWith(">") &&
-      !lines[i].startsWith("- ") &&
-      !/^\d+\.\s/.test(lines[i]) &&
-      lines[i].trim() !== "---"
-    ) {
-      paraLines.push(lines[i]);
-      i++;
-    }
-    if (paraLines.length > 0) {
-      elements.push(<p key={i}>{processInline(paraLines.join(" "))}</p>);
-    } else {
-      // Safety: skip any unhandled line to prevent infinite loop
-      i++;
-    }
-  }
-
-  return <>{elements}</>;
-}
-
-function processInline(text: string): React.ReactNode {
-  const parts: React.ReactNode[] = [];
-  const regex = /(\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*]+)\*)/g;
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
-    if (match[2] && match[3]) {
-      parts.push(
-        <a key={match.index} href={match[3]} target="_blank" rel="noopener noreferrer">
-          {match[2]}
-        </a>
-      );
-    } else if (match[4]) {
-      parts.push(<strong key={match.index}>{match[4]}</strong>);
-    } else if (match[5]) {
-      parts.push(<code key={match.index}>{match[5]}</code>);
-    } else if (match[6]) {
-      parts.push(<em key={match.index}>{match[6]}</em>);
-    }
-    lastIndex = match.index + match[0].length;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts.length === 1 ? parts[0] : <>{parts}</>;
-}

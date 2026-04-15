@@ -12,6 +12,14 @@ import {
   getPopularTags,
 } from "@/lib/data";
 
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
+
 export const revalidate = 300;
 
 export default async function HomePage() {

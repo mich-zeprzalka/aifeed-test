@@ -17,6 +17,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${category.name} — AiFeed`,
     description: category.description || `Najnowsze wiadomości AI w kategorii ${category.name}`,
+    alternates: {
+      canonical: `/category/${category.slug}`,
+    },
   };
 }
 

@@ -150,6 +150,17 @@ export async function getPopularTags(limit = 10): Promise<Tag[]> {
     .map((e) => e.tag);
 }
 
+export async function getSitemapArticles(limit = 5000): Promise<{ slug: string; updated_at: string; is_featured: boolean }[]> {
+  const { data } = await supabase
+    .from("articles")
+    .select("slug, updated_at, is_featured")
+    .eq("is_published", true)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+
+  return data || [];
+}
+
 // ===================== HELPERS =====================
 
 async function attachTags(article: Article & { category: Category | null }): Promise<ArticleWithRelations> {
