@@ -2,58 +2,7 @@
 
 Poniżej lista propozycji rozwoju serwisu AiFeed, pogrupowana tematycznie. Priorytet: **P1** (krytyczne), **P2** (ważne), **P3** (nice-to-have).
 
----
 
-## 1. Content Pipeline — Ulepszenia
-
-### P1: Wielokrotne cykle generowania dziennie
-Aktualnie pipeline uruchamia się raz dziennie (8:00 UTC). Dla serwisu informacyjnego optymalnie byłoby 3-4 razy dziennie (rano, południe, wieczór), aby treści były bardziej aktualne. Ustawmy 3x dziennie. 7:00 czasu polskiego 10 wpisów, 13:00 5 wpisów, 19:00 5 wpisów.
-
-### P1: Prompt engineering i jakość artykułów
-
-Obecne prompty generują artykuły w jednym stylu. Propozycje:
-- Różne szablony per kategoria (artykuł badawczy vs. news vs. tutorial)
-- Dodanie sekcji "kluczowe wnioski" (bullet points) na górze artykułu
-- Lepsze zróżnicowanie excerptów (obecnie mock data mają identyczne)
-- Generowanie meta description zoptymalizowanego pod SEO
-
-### P2: Walidacja i moderacja treści
-- Automatyczny filtr jakości (odrzucanie artykułów poniżej progu)
-
-
-### P2: Więcej źródeł RSS
-Kandydaci na nowe źródła:
-- Hugging Face Blog
-- Anthropic Blog / Research
-- DeepMind Blog
-- arXiv (AI/ML daily digest)
-- Polskie źródła: Niebezpiecznik (AI), Spider's Web, AntyWeb
-
-### P3: Źródła nie-RSS
-- Monitoring X/Twitter popularnych kont AI
-- Scraping Product Hunt (kategoria AI)
-- Newsletter parsing (Import AI, The Batch)
-
----
-
-## 2. Frontend — Design i UX
-
-### P1: Paginacja / Infinite scroll
-Strona główna i kategorie pokazują stałą liczbę artykułów. Przy rosnącej ilości treści konieczne:
-- Paginacja na stronach kategorii (zgodna z shadcn)
-- "Załaduj więcej" lub infinite scroll na homepage (zgodna z shadcn) [opcjonalnie nie widzę tego jako priorytet]
-- Cursor-based pagination w Supabase (wydajniejsza niż offset)
-
-### P2: Udostępnianie artykułów
-- Przyciski share: Twitter/X, LinkedIn, Facebook, kopiuj link
-- Web Share API na mobile
-- Kopiowanie cytatu z artykułu
-
-### P2: Breadcrumbs
-Nawigacja okruszkowa na stronach artykułów i kategorii. Korzystne dla SEO (JSON-LD BreadcrumbList).
-
-### P2: Reading progress indicator
-Pasek postępu czytania na górze strony artykułu (popularne w serwisach informacyjnych).
 
 
 ---
