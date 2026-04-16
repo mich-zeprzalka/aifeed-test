@@ -7,9 +7,10 @@ Poniżej lista propozycji rozwoju serwisu AiFeed, pogrupowana tematycznie. Prior
 ## 1. Content Pipeline — Ulepszenia
 
 ### P1: Wielokrotne cykle generowania dziennie
-Aktualnie pipeline uruchamia się raz dziennie (8:00 UTC). Dla serwisu informacyjnego optymalnie byłoby 3-4 razy dziennie (rano, południe, wieczór), aby treści były bardziej aktualne.
+Aktualnie pipeline uruchamia się raz dziennie (8:00 UTC). Dla serwisu informacyjnego optymalnie byłoby 3-4 razy dziennie (rano, południe, wieczór), aby treści były bardziej aktualne. Ustawmy 3x dziennie. 7:00 czasu polskiego 10 wpisów, 13:00 5 wpisów, 19:00 5 wpisów.
 
 ### P1: Prompt engineering i jakość artykułów
+
 Obecne prompty generują artykuły w jednym stylu. Propozycje:
 - Różne szablony per kategoria (artykuł badawczy vs. news vs. tutorial)
 - Dodanie sekcji "kluczowe wnioski" (bullet points) na górze artykułu
@@ -18,8 +19,7 @@ Obecne prompty generują artykuły w jednym stylu. Propozycje:
 
 ### P2: Walidacja i moderacja treści
 - Automatyczny filtr jakości (odrzucanie artykułów poniżej progu)
-- System flagowania artykułów wymagających przeglądu
-- Panel administracyjny do moderacji przed publikacją
+
 
 ### P2: Więcej źródeł RSS
 Kandydaci na nowe źródła:
@@ -38,20 +38,11 @@ Kandydaci na nowe źródła:
 
 ## 2. Frontend — Design i UX
 
-### P1: Loading states i Suspense
-Brak loading skeletonów na stronach. Propozycja:
-- Skeleton components dla ArticleCard (każdy wariant)
-- `loading.tsx` w `/app/`, `/app/article/[slug]/`, `/app/category/[slug]/`
-- Streaming z Suspense dla ciężkich sekcji
-
 ### P1: Paginacja / Infinite scroll
 Strona główna i kategorie pokazują stałą liczbę artykułów. Przy rosnącej ilości treści konieczne:
-- Paginacja na stronach kategorii
-- "Załaduj więcej" lub infinite scroll na homepage
+- Paginacja na stronach kategorii (zgodna z shadcn)
+- "Załaduj więcej" lub infinite scroll na homepage (zgodna z shadcn) [opcjonalnie nie widzę tego jako priorytet]
 - Cursor-based pagination w Supabase (wydajniejsza niż offset)
-
-### P2: Widok artykułu — Table of Contents
-Dla dłuższych artykułów (>1000 słów) automatyczny spis treści wygenerowany z nagłówków h2/h3, sticky na boku.
 
 ### P2: Udostępnianie artykułów
 - Przyciski share: Twitter/X, LinkedIn, Facebook, kopiuj link
@@ -64,11 +55,6 @@ Nawigacja okruszkowa na stronach artykułów i kategorii. Korzystne dla SEO (JSO
 ### P2: Reading progress indicator
 Pasek postępu czytania na górze strony artykułu (popularne w serwisach informacyjnych).
 
-### P3: Animacje wejścia sekcji
-Intersection Observer do animacji fade-in sekcji przy scrollowaniu (zamiast wszystkich naraz).
-
-### P3: Tryb czytania
-Przycisk "Focus mode" ukrywający header/footer/sidebar, zostawiający samą treść artykułu.
 
 ---
 

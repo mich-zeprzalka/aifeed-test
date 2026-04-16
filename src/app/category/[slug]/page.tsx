@@ -1,13 +1,18 @@
 import { notFound } from "next/navigation";
 import { ArticleCard } from "@/components/articles/article-card";
 import { CategoryBar } from "@/components/articles/category-bar";
-import { getArticlesByCategory, getCategories, getCategoryBySlug } from "@/lib/data";
+import { Pagination } from "@/components/ui/pagination";
+import { Breadcrumbs } from "@/components/articles/breadcrumbs";
+import { getCategories, getCategoryBySlug, getArticlesByCategoryPaginated } from "@/lib/data";
 import type { Metadata } from "next";
 
 export const revalidate = 300;
 
+const PAGE_SIZE = 12;
+
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ cursor?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -23,23 +28,35 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function CategoryPage({ params }: PageProps) {
+export default async function CategoryPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const [category, categories, articles] = await Promise.all([
+  const { cursor } = await searchParams;
+
+  const [category, categories, paginated] = await Promise.all([
     getCategoryBySlug(slug),
     getCategories(),
-    getArticlesByCategory(slug),
+    getArticlesByCategoryPaginated(slug, PAGE_SIZE, cursor),
   ]);
 
   if (!category) notFound();
+
+  const { articles, nextCursor, total } = paginated;
 
   return (
     <>
       <CategoryBar categories={categories} activeSlug={slug} />
 
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        {/* Breadcrumbs */}
+        <Breadcrumbs
+          items={[
+            { label: "Strona główna", href: "/" },
+            { label: category.name },
+          ]}
+        />
+
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-10 mt-4">
           <span className="mb-3 inline-block text-[11px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
             Kategoria
           </span>
@@ -54,13 +71,23 @@ export default async function CategoryPage({ params }: PageProps) {
         </div>
 
         {articles.length > 0 ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {articles.map((article, i) => (
-              <div key={article.id} className={`animate-fade-in-up stagger-${i + 1}`}>
-                <ArticleCard article={article} />
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {articles.map((article, i) => (
+                <div key={article.id} className={`animate-fade-in-up stagger-${i + 1}`}>
+                  <ArticleCard article={article} />
+                </div>
+              ))}
+            </div>
+
+            <Pagination
+              basePath={`/category/${slug}`}
+              nextCursor={nextCursor}
+              hasPrev={!!cursor}
+              total={total}
+              pageSize={PAGE_SIZE}
+            />
+          </>
         ) : (
           <div className="py-24 text-center">
             <p className="text-lg text-muted-foreground">Jeszcze brak artykułów.</p>

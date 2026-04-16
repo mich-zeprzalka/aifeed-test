@@ -76,6 +76,63 @@ export async function getArticlesByCategory(categorySlug: string): Promise<Artic
   return Promise.all(articles.map(attachTags));
 }
 
+export interface PaginatedResult {
+  articles: ArticleWithRelations[];
+  nextCursor: string | null;
+  prevCursor: string | null;
+  total: number;
+}
+
+export async function getArticlesByCategoryPaginated(
+  categorySlug: string,
+  pageSize = 12,
+  cursor?: string,
+): Promise<PaginatedResult> {
+  const { data: category } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("slug", categorySlug)
+    .single();
+
+  if (!category) return { articles: [], nextCursor: null, prevCursor: null, total: 0 };
+
+  // Total count for UI
+  const { count } = await supabase
+    .from("articles")
+    .select("*", { count: "exact", head: true })
+    .eq("is_published", true)
+    .eq("category_id", category.id);
+
+  // Fetch page + 1 extra to detect next page
+  let query = supabase
+    .from("articles")
+    .select("*, category:categories(*)")
+    .eq("is_published", true)
+    .eq("category_id", category.id)
+    .order("published_at", { ascending: false })
+    .limit(pageSize + 1);
+
+  if (cursor) {
+    query = query.lt("published_at", cursor);
+  }
+
+  const { data: articles } = await query;
+  if (!articles || articles.length === 0) {
+    return { articles: [], nextCursor: null, prevCursor: null, total: count || 0 };
+  }
+
+  const hasMore = articles.length > pageSize;
+  const pageArticles = articles.slice(0, pageSize);
+  const withTags = await Promise.all(pageArticles.map(attachTags));
+
+  return {
+    articles: withTags,
+    nextCursor: hasMore ? pageArticles[pageArticles.length - 1].published_at : null,
+    prevCursor: cursor || null,
+    total: count || 0,
+  };
+}
+
 export async function getCategories(): Promise<Category[]> {
   const { data } = await supabase
     .from("categories")

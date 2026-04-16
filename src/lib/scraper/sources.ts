@@ -72,6 +72,35 @@ export const RSS_SOURCES = [
     url: "https://huggingface.co/blog/feed.xml",
     category: "narzedzia",
   },
+  {
+    name: "Anthropic Research",
+    url: "https://www.anthropic.com/rss.xml",
+    category: "badania",
+  },
+
+  // ===== Źródła akademickie =====
+  {
+    name: "arXiv AI",
+    url: "https://rss.arxiv.org/rss/cs.AI",
+    category: "badania",
+  },
+
+  // ===== Polskie źródła =====
+  {
+    name: "Spider's Web",
+    url: "https://spidersweb.pl/feed",
+    category: "narzedzia",
+  },
+  {
+    name: "AntyWeb",
+    url: "https://antyweb.pl/feed",
+    category: "narzedzia",
+  },
+  {
+    name: "Niebezpiecznik",
+    url: "https://niebezpiecznik.pl/feed/",
+    category: "etyka",
+  },
 
   // ===== Społeczność i agregatory =====
   {

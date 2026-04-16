@@ -33,9 +33,11 @@ export async function scrapeAllFeeds(): Promise<ScrapedArticle[]> {
         const aiKeywords = ["ai", "artificial intelligence", "machine learning", "llm", "gpt", "claude", "gemini", "neural", "deep learning", "model", "transformer", "openai", "anthropic", "meta ai", "mistral", "copilot", "chatgpt", "midjourney", "stable diffusion", "hugging face", "nvidia", "deepmind", "reasoning", "agentic"];
         const isAIRelated = aiKeywords.some((kw) => text.includes(kw));
 
-        // Company blogs are always AI-related
-        const alwaysAI = source.name.includes("Blog") || source.name.includes("DeepMind") || source.name.includes("Hugging Face");
-        if (!isAIRelated && !alwaysAI) {
+        // Company blogs, research feeds, and arXiv are always AI-related
+        const alwaysRelevant = ["Blog", "DeepMind", "Hugging Face", "Anthropic", "arXiv"].some(
+          (kw) => source.name.includes(kw)
+        );
+        if (!isAIRelated && !alwaysRelevant) {
           continue;
         }
 

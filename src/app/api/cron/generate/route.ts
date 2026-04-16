@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { scrapeAllFeeds, selectTopArticles } from "@/lib/scraper/parser";
 import { scrapeArticleContent } from "@/lib/scraper/content";
 import { generateArticle } from "@/lib/ai/writer";
+import { assessArticleQuality } from "@/lib/ai/quality";
 import { getArticleThumbnail } from "@/lib/images/generator";
 import { createAdminClient } from "@/lib/supabase/admin";
 import slugify from "slugify";
@@ -9,7 +10,7 @@ import slugify from "slugify";
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-export async function POST(request: NextRequest) {
+async function runPipeline(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
@@ -42,13 +43,14 @@ export async function POST(request: NextRequest) {
       return Response.json({ message: "No new items to process", generated: 0 });
     }
 
-    // Step 3: Select top articles (configurable via ?count=N, default 1)
+    // Step 3: Select top articles (configurable via ?count=N, default 10)
     const url = new URL(request.url);
-    const count = Math.min(parseInt(url.searchParams.get("count") || "1", 10) || 1, 10);
+    const count = Math.min(parseInt(url.searchParams.get("count") || "10", 10) || 10, 15);
     const topItems = selectTopArticles(newItems, count);
 
     // Step 4: Generate articles
     const generated: string[] = [];
+    const rejected: string[] = [];
 
     for (const item of topItems) {
       try {
@@ -73,10 +75,23 @@ export async function POST(request: NextRequest) {
         // Validate AI response — reject refusals and garbage
         const refusalPatterns = ["nie można przetworzyć", "nie mogę", "brak treści", "brak czytelnej"];
         const isRefusal = refusalPatterns.some((p) => article.content.toLowerCase().includes(p));
-        const tooShort = article.content.split(/\s+/).length < 100;
 
-        if (isRefusal || tooShort) {
-          console.warn(`[Pipeline] AI refused or produced too little for "${item.title}", skipping`);
+        if (isRefusal) {
+          console.warn(`[Pipeline] AI refused for "${item.title}", skipping`);
+          await supabase.from("scraped_items").upsert(
+            { source_url: item.url, title: item.title, description: item.description, source_name: item.sourceName, is_processed: true },
+            { onConflict: "source_url" }
+          );
+          continue;
+        }
+
+        // Quality gate — reject low-quality articles
+        const quality = assessArticleQuality(article);
+        console.log(`[Quality] "${article.title}" — score: ${quality.score}/100${quality.issues.length > 0 ? `, issues: ${quality.issues.join(", ")}` : ""}`);
+
+        if (quality.score < 50) {
+          console.warn(`[Pipeline] Rejecting "${article.title}" — quality score ${quality.score}/100: ${quality.issues.join(", ")}`);
+          rejected.push(article.title);
           await supabase.from("scraped_items").upsert(
             { source_url: item.url, title: item.title, description: item.description, source_name: item.sourceName, is_processed: true },
             { onConflict: "source_url" }
@@ -175,6 +190,7 @@ export async function POST(request: NextRequest) {
     return Response.json({
       message: `Generated ${generated.length} articles`,
       generated,
+      rejected,
       scraped: scrapedItems.length,
       new: newItems.length,
     });
@@ -187,6 +203,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
-  return Response.json({ status: "ok", endpoint: "cron/generate" });
+// Vercel Cron triggers GET requests
+export async function GET(request: NextRequest) {
+  return runPipeline(request);
+}
+
+// Manual triggers via POST also supported
+export async function POST(request: NextRequest) {
+  return runPipeline(request);
 }
