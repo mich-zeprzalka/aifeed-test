@@ -15,13 +15,13 @@ export default function AboutPage() {
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
       {/* Header */}
       <header className="mb-14">
-        <p className="mb-3 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
+        <p className="mb-3 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           O serwisie
         </p>
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-5">
           O serwisie AiFeed
         </h1>
-        <p className="text-[15px] text-muted-foreground leading-relaxed">
+        <p className="text-body text-muted-foreground leading-relaxed">
           Pierwszy w Polsce w pełni zautomatyzowany magazyn informacyjny o sztucznej inteligencji.
           Bez redakcji, bez opóźnień — tylko AI, dane i algorytmy pracujące 24 godziny na dobę.
         </p>
@@ -29,19 +29,19 @@ export default function AboutPage() {
 
       {/* Section: What is AiFeed */}
       <section className="mb-14">
-        <p className="mb-2 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
+        <p className="mb-2 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           Czym jest AiFeed
         </p>
         <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4">
           Zautomatyzowany pipeline informacyjny
         </h2>
-        <p className="text-[15px] text-muted-foreground leading-relaxed mb-4">
+        <p className="text-body text-muted-foreground leading-relaxed mb-4">
           AiFeed to serwis, który samodzielnie monitoruje dziesiątki źródeł informacji ze świata AI,
           selekcjonuje najważniejsze newsy, a następnie generuje kompletne artykuły w języku polskim.
           Każdy tekst jest wzbogacany o miniaturki, tagi i kategoryzację — bez jakiejkolwiek
           ludzkiej interwencji.
         </p>
-        <p className="text-[15px] text-muted-foreground leading-relaxed">
+        <p className="text-body text-muted-foreground leading-relaxed">
           Serwis powstał z przekonania, że informacje o sztucznej inteligencji powinny docierać
           do polskojęzycznych czytelników szybko, w przystępnej formie i bez barier językowych.
           Zamiast czekać na tłumaczenia czy streszczenia — dostarczamy je automatycznie.
@@ -50,7 +50,7 @@ export default function AboutPage() {
 
       {/* Section: How it works */}
       <section className="mb-14">
-        <p className="mb-2 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
+        <p className="mb-2 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           Jak to działa
         </p>
         <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-6">
@@ -84,12 +84,12 @@ export default function AboutPage() {
             },
           ].map((item) => (
             <div key={item.step} className="flex gap-4">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[11px] font-mono font-bold text-primary">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-label font-mono font-bold text-primary">
                 {item.step}
               </div>
               <div>
-                <h3 className="text-[15px] font-bold mb-1">{item.title}</h3>
-                <p className="text-[15px] text-muted-foreground leading-relaxed">
+                <h3 className="text-body font-bold mb-1">{item.title}</h3>
+                <p className="text-body text-muted-foreground leading-relaxed">
                   {item.description}
                 </p>
               </div>
@@ -100,7 +100,7 @@ export default function AboutPage() {
 
       {/* Section: Technology Stack */}
       <section className="mb-14">
-        <p className="mb-2 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
+        <p className="mb-2 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           Technologia
         </p>
         <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-6">
@@ -138,7 +138,7 @@ export default function AboutPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold">{tech.name}</h3>
-                <p className="mt-0.5 text-[13px] text-muted-foreground leading-relaxed">
+                <p className="mt-0.5 text-body-sm text-muted-foreground leading-relaxed">
                   {tech.description}
                 </p>
               </div>
@@ -149,7 +149,7 @@ export default function AboutPage() {
 
       {/* Stats */}
       <section>
-        <p className="mb-2 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
+        <p className="mb-2 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           W liczbach
         </p>
         <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-6">
@@ -170,7 +170,7 @@ export default function AboutPage() {
                 <stat.icon className="size-5" />
               </div>
               <p className="text-2xl font-extrabold tracking-tight">{stat.value}</p>
-              <p className="text-[11px] font-mono tracking-wide text-muted-foreground">
+              <p className="text-label font-mono tracking-wide text-muted-foreground">
                 {stat.label}
               </p>
             </div>

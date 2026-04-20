@@ -33,7 +33,7 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
                 <span key={i} className="contents">
                   <Link
                     href={`/article/${item.slug}`}
-                    className="shrink-0 py-1.5 text-[11px] text-background/70 hover:text-background transition-colors"
+                    className="shrink-0 py-1.5 text-label text-background/70 hover:text-background transition-colors"
                     tabIndex={copy === 1 ? -1 : undefined}
                   >
                     {item.title}
@@ -64,7 +64,7 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${active
+                  className={`relative rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${active
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                     }`}
@@ -96,43 +96,49 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
           </div>
         </div>
 
-        {/* Mobile nav */}
-        {mobileOpen && (
-          <div className="border-t border-border/50 bg-background md:hidden">
-            <nav className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
-              <div className="flex flex-col gap-0.5">
-                {siteConfig.categories.map((cat) => {
-                  const href = `/category/${cat.slug}`;
-                  const active = pathname === href;
-                  return (
+        {/* Mobile nav — animated with grid-rows transition */}
+        <div
+          className={`grid md:hidden transition-[grid-template-rows] duration-300 ease-out ${
+            mobileOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="border-t border-border/50 bg-background">
+              <nav className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
+                <div className="flex flex-col gap-0.5">
+                  {siteConfig.categories.map((cat) => {
+                    const href = `/category/${cat.slug}`;
+                    const active = pathname === href;
+                    return (
+                      <Link
+                        key={cat.slug}
+                        href={href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${active
+                          ? "bg-muted text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          }`}
+                      >
+                        {cat.name}
+                      </Link>
+                    );
+                  })}
+                  <hr className="my-2 border-border/40" />
+                  {NAV_LINKS.map((link) => (
                     <Link
-                      key={cat.slug}
-                      href={href}
+                      key={link.href}
+                      href={link.href}
                       onClick={() => setMobileOpen(false)}
-                      className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${active
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        }`}
+                      className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                     >
-                      {cat.name}
+                      {link.name}
                     </Link>
-                  );
-                })}
-                <hr className="my-2 border-border/40" />
-                {NAV_LINKS.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                  >
-                    {link.name}
-                  </Link>
-                ))}
-              </div>
-            </nav>
+                  ))}
+                </div>
+              </nav>
+            </div>
           </div>
-        )}
+        </div>
       </header>
 
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />

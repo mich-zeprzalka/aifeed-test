@@ -2,12 +2,13 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Clock, ExternalLink, Calendar } from "lucide-react";
-import { getArticleBySlug, getArticles } from "@/lib/data";
+import { Clock, ExternalLink, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { getArticleBySlug, getArticles, getAdjacentArticles } from "@/lib/data";
 import { ArticleCard } from "@/components/articles/article-card";
 import { Breadcrumbs } from "@/components/articles/breadcrumbs";
 import { ShareButtons } from "@/components/articles/share-buttons";
 import { ReadingProgress } from "@/components/articles/reading-progress";
+import { TableOfContents } from "@/components/articles/table-of-contents";
 import { siteConfig } from "@/config/site";
 import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
@@ -52,7 +53,12 @@ export default async function ArticlePage({ params }: PageProps) {
   const article = await getCachedArticle(slug);
   if (!article) notFound();
 
-  const allArticles = await getArticles(10);
+  const [allArticles, adjacent] = await Promise.all([
+    getArticles(10),
+    article.category_id && article.published_at
+      ? getAdjacentArticles(article.id, article.category_id, article.published_at)
+      : Promise.resolve({ prev: null, next: null }),
+  ]);
   const relatedArticles = allArticles
     .filter((a) => a.id !== article.id && a.category_id === article.category_id)
     .slice(0, 3);
@@ -115,13 +121,13 @@ export default async function ArticlePage({ params }: PageProps) {
           {/* Meta */}
           <div className="mb-5 flex items-center gap-3">
             {publishedDate && (
-              <span className="flex items-center gap-1.5 text-[11px] font-mono tracking-wide text-muted-foreground">
+              <span className="flex items-center gap-1.5 text-label font-mono tracking-wide text-muted-foreground">
                 <Calendar className="size-3" />
                 {publishedDate}
               </span>
             )}
             <span className="size-0.5 rounded-full bg-muted-foreground/30" />
-            <span className="flex items-center gap-1.5 text-[11px] font-mono tracking-wide text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-label font-mono tracking-wide text-muted-foreground">
               <Clock className="size-3" />
               {article.reading_time} min czytania
             </span>
@@ -159,7 +165,7 @@ export default async function ArticlePage({ params }: PageProps) {
               />
             </div>
             {article.thumbnail_source && article.source_urls[0] && (
-              <p className="mt-2 text-center text-[11px] font-mono text-muted-foreground/60">
+              <p className="mt-2 text-center text-label font-mono text-muted-foreground/60">
                 Źródło zdjęcia:{" "}
                 <a
                   href={article.source_urls[0]}
@@ -176,10 +182,23 @@ export default async function ArticlePage({ params }: PageProps) {
 
         {/* Article content */}
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          {article.content && (
+            <TableOfContents content={article.content} />
+          )}
           <div className="prose-article">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
+                h2: ({ children, ...props }) => {
+                  const text = String(children);
+                  const id = text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+                  return <h2 id={id} {...props}>{children}</h2>;
+                },
+                h3: ({ children, ...props }) => {
+                  const text = String(children);
+                  const id = text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+                  return <h3 id={id} {...props}>{children}</h3>;
+                },
                 a: ({ href, children, ...props }) => (
                   <a
                     href={href}
@@ -203,7 +222,7 @@ export default async function ArticlePage({ params }: PageProps) {
                 <Link
                   key={tag.id}
                   href={`/tag/${tag.slug}`}
-                  className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <span className="text-primary/60 mr-0.5">#</span>{tag.name}
                 </Link>
@@ -213,7 +232,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
           {/* Share (bottom) — minimal */}
           <div className="mt-10 pt-8 border-t border-border/40 flex items-center justify-between">
-            <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+            <span className="text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
               Udostępnij
             </span>
             <ShareButtons url={articleUrl} title={article.title} />
@@ -222,7 +241,7 @@ export default async function ArticlePage({ params }: PageProps) {
           {/* Sources — minimal */}
           {article.source_urls.length > 0 && (
             <div className="mt-6 pt-6 border-t border-border/40">
-              <h3 className="mb-3 text-[11px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+              <h3 className="mb-3 text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
                 Źródła
               </h3>
               <ul className="space-y-1.5">
@@ -232,7 +251,7 @@ export default async function ArticlePage({ params }: PageProps) {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+                      className="inline-flex items-center gap-1.5 text-body-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <ExternalLink className="size-3 shrink-0 text-muted-foreground/50" />
                       {article.source_titles[i] || url}
@@ -243,6 +262,42 @@ export default async function ArticlePage({ params }: PageProps) {
             </div>
           )}
         </div>
+
+        {/* Prev / Next navigation */}
+        {(adjacent.prev || adjacent.next) && (
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 mt-10">
+            <div className="flex items-stretch gap-4 border-t border-border/40 pt-8">
+              {adjacent.prev ? (
+                <Link
+                  href={`/article/${adjacent.prev.slug}`}
+                  className="group flex-1 flex items-start gap-3 rounded-xl border border-border/40 p-4 transition-all hover:border-primary/30 hover:bg-muted/20"
+                >
+                  <ChevronLeft className="size-4 shrink-0 mt-0.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <div className="min-w-0">
+                    <p className="text-label font-mono uppercase tracking-widest text-muted-foreground mb-1">Poprzedni</p>
+                    <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                      {adjacent.prev.title}
+                    </p>
+                  </div>
+                </Link>
+              ) : <div className="flex-1" />}
+              {adjacent.next ? (
+                <Link
+                  href={`/article/${adjacent.next.slug}`}
+                  className="group flex-1 flex items-start gap-3 rounded-xl border border-border/40 p-4 transition-all hover:border-primary/30 hover:bg-muted/20 text-right"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-label font-mono uppercase tracking-widest text-muted-foreground mb-1">Następny</p>
+                    <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                      {adjacent.next.title}
+                    </p>
+                  </div>
+                  <ChevronRight className="size-4 shrink-0 mt-0.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </Link>
+              ) : <div className="flex-1" />}
+            </div>
+          </div>
+        )}
 
         {/* Related articles */}
         {relatedArticles.length > 0 && (

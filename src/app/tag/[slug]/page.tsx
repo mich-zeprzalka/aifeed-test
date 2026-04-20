@@ -3,6 +3,7 @@ import { Hash } from "lucide-react";
 import { ArticleCard } from "@/components/articles/article-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getTagBySlug, getArticlesByTag } from "@/lib/data";
+import { siteConfig } from "@/config/site";
 import type { Metadata } from "next";
 
 export const revalidate = 300;
@@ -31,11 +32,36 @@ export default async function TagPage({ params }: PageProps) {
 
   const articles = await getArticlesByTag(slug);
 
+  const collectionJsonLd = articles.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `#${tag.name}`,
+    description: `Artykuły oznaczone tagiem #${tag.name}`,
+    url: `${siteConfig.url}/tag/${tag.slug}`,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: articles.length,
+      itemListElement: articles.slice(0, 20).map((article, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: `${siteConfig.url}/article/${article.slug}`,
+        name: article.title,
+      })),
+    },
+  } : null;
+
   return (
+    <>
+    {collectionJsonLd && (
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
+      />
+    )}
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-10">
-        <span className="mb-3 inline-block text-[11px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+        <span className="mb-3 inline-block text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
           Tag
         </span>
         <h1 className="text-3xl sm:text-4xl font-heading font-extrabold tracking-tight text-balance">
@@ -62,5 +88,6 @@ export default async function TagPage({ params }: PageProps) {
         />
       )}
     </div>
+    </>
   );
 }

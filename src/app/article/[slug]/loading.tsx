@@ -9,7 +9,7 @@ export default function ArticleLoading() {
       <header className="mx-auto max-w-3xl px-4 pt-8 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="mb-8 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground/50 transition-colors"
+          className="mb-8 inline-flex items-center gap-1.5 text-body-sm text-muted-foreground/50 transition-colors"
         >
           <ArrowLeft className="size-3.5" />
           Powrót

@@ -14,14 +14,14 @@ export function Footer() {
                 aifeed<span className="text-primary">.</span>
               </span>
             </Link>
-            <p className="text-[13px] text-muted-foreground leading-relaxed max-w-xs">
+            <p className="text-body-sm text-muted-foreground leading-relaxed max-w-xs">
               Twoje codzienne źródło wiadomości o sztucznej inteligencji, badaniach i rynku. Wyselekcjonowane przez AI, zweryfikowane przez redaktorów.
             </p>
           </div>
 
           {/* Categories */}
           <div>
-            <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="mb-4 text-label font-semibold uppercase tracking-widest text-muted-foreground">
               Kategorie
             </h3>
             <ul className="space-y-2.5">
@@ -29,7 +29,7 @@ export function Footer() {
                 <li key={cat.slug}>
                   <Link
                     href={`/category/${cat.slug}`}
-                    className="text-[13px] text-foreground/70 hover:text-foreground transition-colors"
+                    className="text-body-sm text-foreground/70 hover:text-foreground transition-colors"
                   >
                     {cat.name}
                   </Link>
@@ -40,19 +40,19 @@ export function Footer() {
 
           {/* Links */}
           <div>
-            <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="mb-4 text-label font-semibold uppercase tracking-widest text-muted-foreground">
               Zasoby
             </h3>
             <ul className="space-y-2.5">
               <li>
-                <Link href="/about" className="text-[13px] text-foreground/70 hover:text-foreground transition-colors">
+                <Link href="/about" className="text-body-sm text-foreground/70 hover:text-foreground transition-colors">
                   O nas
                 </Link>
               </li>
               <li>
                 <Link
                   href="/feed.xml"
-                  className="text-[13px] text-foreground/70 hover:text-foreground transition-colors"
+                  className="text-body-sm text-foreground/70 hover:text-foreground transition-colors"
                 >
                   RSS Feed
                 </Link>
@@ -60,7 +60,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/privacy"
-                  className="text-[13px] text-foreground/70 hover:text-foreground transition-colors"
+                  className="text-body-sm text-foreground/70 hover:text-foreground transition-colors"
                 >
                   Polityka Prywatności
                 </Link>
@@ -70,10 +70,10 @@ export function Footer() {
 
           {/* Newsletter */}
           <div className="overflow-hidden">
-            <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="mb-4 text-label font-semibold uppercase tracking-widest text-muted-foreground">
               Bądź na bieżąco
             </h3>
-            <p className="text-[13px] text-muted-foreground mb-4">
+            <p className="text-body-sm text-muted-foreground mb-4">
               Odbieraj najnowsze wieści o AI każdego dnia.
             </p>
             <NewsletterForm variant="compact" />
@@ -83,10 +83,10 @@ export function Footer() {
         <hr className="my-10 border-border/40" />
 
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-          <p className="text-[11px] text-muted-foreground/60">
+          <p className="text-label text-muted-foreground/60">
             &copy; {new Date().getFullYear()} {siteConfig.name}. Wygenerowane przez AI, zweryfikowane przez redaktorów.
           </p>
-          <p className="text-[11px] text-muted-foreground/60">
+          <p className="text-label text-muted-foreground/60">
             Pędzi na Next.js, Supabase & Claude
           </p>
         </div>

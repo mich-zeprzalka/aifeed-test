@@ -72,7 +72,7 @@ export default function SearchPage() {
             placeholder="Szukaj newsów AI, modeli, badań..."
             value={query}
             onChange={handleChange}
-            className="w-full h-12 rounded-xl border border-border bg-card pl-11 pr-4 text-[15px] placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
+            className="w-full h-12 rounded-xl border border-border bg-card pl-11 pr-4 text-body placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
             autoFocus
           />
         </div>
@@ -80,7 +80,7 @@ export default function SearchPage() {
 
       <div aria-live="polite" aria-atomic="true">
         {searched && (
-          <p className="mb-6 text-[13px] text-muted-foreground">
+          <p className="mb-6 text-body-sm text-muted-foreground">
             {loading
               ? "Szukam..."
               : `${results.length} ${pluralize(results.length)} dla "${query}"`}

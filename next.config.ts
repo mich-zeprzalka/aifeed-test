@@ -27,7 +27,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.cloudfront.net" },
       { protocol: "https", hostname: "*.imgur.com" },
       { protocol: "https", hostname: "*.cdn.sanity.io" },
-      // Catch remaining og:image sources (broad but HTTPS-only)
+      // Catch-all: the AI pipeline scrapes thumbnails from unpredictable RSS
+      // sources, so a fixed whitelist will always have gaps. HTTPS-only.
       { protocol: "https", hostname: "**" },
     ],
   },

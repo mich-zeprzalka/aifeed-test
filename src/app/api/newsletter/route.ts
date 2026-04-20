@@ -1,8 +1,23 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
+
+const RATE_LIMIT = { limit: 5, windowMs: 60_000 }; // 5 req/min per IP
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || request.headers.get("x-real-ip")
+      || "unknown";
+
+    const { allowed } = rateLimit(`newsletter:${ip}`, RATE_LIMIT);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Zbyt wiele prób. Spróbuj za chwilę." },
+        { status: 429 }
+      );
+    }
+
     const { email } = await request.json();
 
     if (!email || typeof email !== "string") {

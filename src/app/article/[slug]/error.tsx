@@ -23,7 +23,7 @@ export default function ArticleError({
       <h1 className="mb-3 text-2xl font-bold font-heading tracking-tight">
         Ups, coś poszło nie tak
       </h1>
-      <p className="mb-8 text-[15px] text-muted-foreground">
+      <p className="mb-8 text-body text-muted-foreground">
         Nie udało się załadować artykułu. Spróbuj ponownie lub wróć do strony głównej.
       </p>
       <div className="flex items-center gap-3">

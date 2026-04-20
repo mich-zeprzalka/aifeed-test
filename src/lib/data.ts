@@ -2,6 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 import type { Article, Category, Tag } from "@/types/database";
 
 // ----- Supabase client (read-only, anon key) -----
+// Uses anon key (not server.ts cookie client) because all data access here is
+// public read-only — no RLS row ownership needed. The singleton avoids creating
+// a new client per request while still benefiting from connection pooling.
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -294,37 +297,49 @@ export async function getArticlesGroupedByCategory(
 }
 
 /**
- * Optimized: count tags in application layer but with a single query
- * (fetches only tag_id + tag data, not full article data).
+ * Fetch popular tags ranked by usage count.
+ * Uses a lightweight query fetching only junction rows + embedded tag data.
+ * Ideal: replace with Supabase RPC using SQL GROUP BY for server-side aggregation.
  */
 export async function getPopularTags(limit = 10): Promise<Tag[]> {
-  const { data: tagRows, error } = await supabase
+  // Step 1: Count tag usage via junction table (lightweight — only tag_id column)
+  const { data: countRows, error: countError } = await supabase
     .from("article_tags")
-    .select("tag_id, tags(id, name, slug)");
+    .select("tag_id");
 
-  if (error) {
-    console.error("[data] getPopularTags failed:", error.message);
+  if (countError) {
+    console.error("[data] getPopularTags count failed:", countError.message);
     return [];
   }
-  if (!tagRows || tagRows.length === 0) return [];
+  if (!countRows || countRows.length === 0) return [];
 
-  const countMap = new Map<string, { tag: Tag; count: number }>();
-  for (const row of tagRows) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tag = (row as any).tags as Tag | null;
-    if (!tag) continue;
-    const existing = countMap.get(tag.id);
-    if (existing) {
-      existing.count++;
-    } else {
-      countMap.set(tag.id, { tag, count: 1 });
-    }
+  // Aggregate counts in memory
+  const countMap = new Map<string, number>();
+  for (const row of countRows) {
+    countMap.set(row.tag_id, (countMap.get(row.tag_id) || 0) + 1);
   }
 
-  return [...countMap.values()]
-    .sort((a, b) => b.count - a.count)
+  // Step 2: Get top N tag IDs
+  const topTagIds = [...countMap.entries()]
+    .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
-    .map((e) => e.tag);
+    .map(([id]) => id);
+
+  // Step 3: Fetch only the tags we need (not all joined data)
+  const { data: tags, error: tagError } = await supabase
+    .from("tags")
+    .select("id, name, slug")
+    .in("id", topTagIds);
+
+  if (tagError) {
+    console.error("[data] getPopularTags tags failed:", tagError.message);
+    return [];
+  }
+  if (!tags) return [];
+
+  // Preserve ranking order
+  const tagMap = new Map(tags.map((t) => [t.id, t as Tag]));
+  return topTagIds.map((id) => tagMap.get(id)).filter(Boolean) as Tag[];
 }
 
 export async function getSitemapArticles(limit = 5000): Promise<{ slug: string; updated_at: string; is_featured: boolean }[]> {
@@ -393,6 +408,58 @@ export async function getArticlesByTag(tagSlug: string): Promise<ArticleWithRela
   if (error || !articles || articles.length === 0) return [];
 
   return attachTagsBatch(articles);
+}
+
+// ===================== ADJACENT ARTICLES =====================
+
+export interface AdjacentArticle {
+  slug: string;
+  title: string;
+}
+
+export interface AdjacentArticles {
+  prev: AdjacentArticle | null;
+  next: AdjacentArticle | null;
+}
+
+/**
+ * Get previous and next articles in the same category, ordered by published_at.
+ * "Previous" = older, "Next" = newer.
+ */
+export async function getAdjacentArticles(
+  articleId: string,
+  categoryId: string,
+  publishedAt: string
+): Promise<AdjacentArticles> {
+  const [prevResult, nextResult] = await Promise.all([
+    // Older article (previous)
+    supabase
+      .from("articles")
+      .select("slug, title")
+      .eq("is_published", true)
+      .eq("category_id", categoryId)
+      .neq("id", articleId)
+      .lt("published_at", publishedAt)
+      .order("published_at", { ascending: false })
+      .limit(1)
+      .single(),
+    // Newer article (next)
+    supabase
+      .from("articles")
+      .select("slug, title")
+      .eq("is_published", true)
+      .eq("category_id", categoryId)
+      .neq("id", articleId)
+      .gt("published_at", publishedAt)
+      .order("published_at", { ascending: true })
+      .limit(1)
+      .single(),
+  ]);
+
+  return {
+    prev: prevResult.data || null,
+    next: nextResult.data || null,
+  };
 }
 
 // ===================== ALL TAGS (for sitemap) =====================

@@ -38,7 +38,7 @@ function FeaturedCard({ article, className }: { article: ArticleCardProps["artic
       <div className="gradient-overlay absolute inset-0 z-10" />
       <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7 z-20 flex flex-col justify-end h-full items-start">
         {article.category && (
-          <span className="mb-3 rounded-md px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-white/90 bg-white/15 backdrop-blur-md border border-white/10">
+          <span className="mb-3 rounded-md px-2.5 py-1 text-caption font-mono font-bold uppercase tracking-widest text-white/90 bg-white/15 backdrop-blur-md border border-white/10">
             {article.category.name}
           </span>
         )}
@@ -82,7 +82,7 @@ function DefaultCard({ article, className }: { article: ArticleCardProps["articl
       </div>
       <div className="flex flex-1 flex-col p-5">
         {article.category && (
-          <span className="mb-3 inline-block w-fit text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+          <span className="mb-3 inline-block w-fit text-caption font-mono font-bold uppercase tracking-widest text-muted-foreground">
             {article.category.name}
           </span>
         )}
@@ -92,7 +92,7 @@ function DefaultCard({ article, className }: { article: ArticleCardProps["articl
         <p className="mb-5 text-sm text-muted-foreground leading-relaxed line-clamp-2 flex-1">
           {article.excerpt}
         </p>
-        <div className="flex items-center gap-3 text-[11px] font-mono tracking-wide text-muted-foreground">
+        <div className="flex items-center gap-3 text-label font-mono tracking-wide text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Clock className="size-3" />
             {article.reading_time} min
@@ -127,7 +127,7 @@ function CompactCard({ article, className }: { article: ArticleCardProps["articl
         <h4 className="text-sm font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 pr-2">
           {article.title}
         </h4>
-        <span className="mt-2 text-[10px] font-mono text-muted-foreground">
+        <span className="mt-2 text-caption font-mono text-muted-foreground">
           {formatDate(article.published_at)}
         </span>
       </div>

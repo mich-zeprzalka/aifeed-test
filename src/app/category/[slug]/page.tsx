@@ -6,6 +6,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { Breadcrumbs } from "@/components/articles/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getCategories, getCategoryBySlug, getArticlesByCategoryPaginated } from "@/lib/data";
+import { siteConfig } from "@/config/site";
 import type { Metadata } from "next";
 
 export const revalidate = 300;
@@ -44,8 +45,27 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
   const { articles, nextCursor, total } = paginated;
 
+  const itemListJsonLd = articles.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: category.name,
+    numberOfItems: articles.length,
+    itemListElement: articles.map((article, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${siteConfig.url}/article/${article.slug}`,
+      name: article.title,
+    })),
+  } : null;
+
   return (
     <>
+      {itemListJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        />
+      )}
       <CategoryBar categories={categories} />
 
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -59,7 +79,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
         {/* Header */}
         <div className="mb-10 mt-4">
-          <span className="mb-3 inline-block text-[11px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+          <span className="mb-3 inline-block text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
             Kategoria
           </span>
           <h1 className="text-3xl sm:text-4xl font-heading font-extrabold tracking-tight text-balance">

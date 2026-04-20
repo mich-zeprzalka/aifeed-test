@@ -52,7 +52,7 @@ export default async function HomePage() {
       {/* Trending Tags */}
       <div className="border-b border-border/30">
         <div className="mx-auto max-w-7xl px-4 py-2.5 sm:px-6 lg:px-8 flex items-center gap-4 overflow-x-auto no-scrollbar">
-          <div className="flex shrink-0 items-center gap-1.5 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest">
+          <div className="flex shrink-0 items-center gap-1.5 text-caption font-mono font-bold text-muted-foreground uppercase tracking-widest">
             <TrendingUp className="size-3.5" />
             Trendy
           </div>
@@ -61,7 +61,7 @@ export default async function HomePage() {
               <Link
                 key={tag.id}
                 href={`/tag/${tag.slug}`}
-                className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 <span className="text-primary/60 mr-0.5">#</span>{tag.name}
               </Link>
@@ -126,7 +126,7 @@ export default async function HomePage() {
                 </h2>
                 <Link
                   href={`/category/${cat.slug}`}
-                  className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-1.5 text-body-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Wszystkie <ArrowRight className="size-3" />
                 </Link>
@@ -170,7 +170,7 @@ export default async function HomePage() {
                         <h3 className="text-sm font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300">
                           {article.title}
                         </h3>
-                        <p className="mt-2 text-[11px] font-mono text-muted-foreground">
+                        <p className="mt-2 text-label font-mono text-muted-foreground">
                           {new Date(article.published_at || "").toLocaleDateString("pl-PL", { day: "numeric", month: "long" })}
                         </p>
                       </div>
@@ -199,19 +199,19 @@ export default async function HomePage() {
       <section className="border-t border-border/40 bg-muted/20 overflow-hidden">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-xl text-center">
-            <p className="mb-4 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
+            <p className="mb-4 text-caption font-mono font-bold uppercase tracking-widest text-primary">
               Newsletter
             </p>
             <h2 className="mb-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-balance">
               Bądź krok przed innymi
             </h2>
-            <p className="mb-8 text-muted-foreground text-[15px] leading-relaxed">
+            <p className="mb-8 text-muted-foreground text-body leading-relaxed">
               Najważniejsze informacje ze świata AI, dostarczane rano. Zero spamu, czysta wartość.
             </p>
             <div className="mx-auto max-w-sm">
               <NewsletterForm />
             </div>
-            <p className="mt-4 text-[11px] font-mono tracking-wide text-muted-foreground/60">
+            <p className="mt-4 text-label font-mono tracking-wide text-muted-foreground/60">
               Zawsze darmowe. Zrezygnuj w dowolnej chwili.
             </p>
           </div>
@@ -223,16 +223,16 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-2 items-center">
             <div>
-              <p className="mb-3 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
+              <p className="mb-3 text-caption font-mono font-bold uppercase tracking-widest text-primary">
                 O serwisie
               </p>
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-balance mb-5">
                 Magazyn AI tworzony przez AI
               </h2>
-              <p className="text-muted-foreground text-[15px] leading-relaxed max-w-lg mb-4">
+              <p className="text-muted-foreground text-body leading-relaxed max-w-lg mb-4">
                 AiFeed to w pełni zautomatyzowany serwis informacyjny. Nasz pipeline monitoruje źródła RSS, analizuje i selekcjonuje newsy, a następnie generuje kompletne artykuły w języku polskim — z&nbsp;miniaturkami, tagami i&nbsp;kategoryzacją.
               </p>
-              <p className="text-muted-foreground text-[15px] leading-relaxed max-w-lg">
+              <p className="text-muted-foreground text-body leading-relaxed max-w-lg">
                 Wszystko działa autonomicznie — od pobrania surowych danych, przez redakcję treści, po publikację na stronie. Codziennie, bez przerw, bez&nbsp;ludzkiej interwencji.
               </p>
             </div>
@@ -251,7 +251,7 @@ export default async function HomePage() {
                     <stat.icon className="size-5" />
                   </div>
                   <p className="text-2xl font-extrabold tracking-tight">{stat.value}</p>
-                  <p className="text-[11px] font-mono tracking-wide text-muted-foreground">{stat.label}</p>
+                  <p className="text-label font-mono tracking-wide text-muted-foreground">{stat.label}</p>
                 </div>
               ))}
             </div>
