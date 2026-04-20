@@ -20,8 +20,7 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
 
   return (
     <>
-      <div className="sticky top-0 z-50">
-      {/* Ticker — full-width scrolling links with dot separators */}
+      {/* Ticker — scrolls away naturally, not sticky */}
       <div className="border-b border-border bg-foreground overflow-hidden pause-on-hover">
         <div className="flex">
           {[0, 1].map((copy) => (
@@ -47,8 +46,8 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
         </div>
       </div>
 
-      {/* Main Header */}
-      <header className="w-full border-b border-border/50 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      {/* Main Header — sticky */}
+      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
           <Link href="/" className="group flex shrink-0 items-center gap-2">
@@ -135,7 +134,6 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
           </div>
         )}
       </header>
-      </div>
 
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
     </>

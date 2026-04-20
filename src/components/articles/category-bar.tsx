@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRef, useEffect, useCallback } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Category } from "@/types/database";
 
@@ -15,6 +16,21 @@ export function CategoryBar({ categories }: CategoryBarProps) {
     ? pathname.split("/")[2]
     : undefined;
   const isHome = pathname === "/";
+  const activeRef = useRef<HTMLAnchorElement>(null);
+
+  const scrollToActive = useCallback(() => {
+    if (activeRef.current) {
+      activeRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "start",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    scrollToActive();
+  }, [activeSlug, scrollToActive]);
 
   return (
     <div className="border-b border-border/40 bg-background">
@@ -23,6 +39,7 @@ export function CategoryBar({ categories }: CategoryBarProps) {
           <div className="flex items-center gap-2.5 py-4">
             <Link
               href="/"
+              ref={isHome && !activeSlug ? activeRef : undefined}
               className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 isHome && !activeSlug
                   ? "bg-foreground text-background"
@@ -35,6 +52,7 @@ export function CategoryBar({ categories }: CategoryBarProps) {
               <Link
                 key={cat.slug}
                 href={`/category/${cat.slug}`}
+                ref={activeSlug === cat.slug ? activeRef : undefined}
                 className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   activeSlug === cat.slug
                     ? "bg-foreground text-background"

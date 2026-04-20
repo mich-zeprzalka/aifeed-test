@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "AiFeed",
   description:
     "Twoje codzienne źródło wiadomości o AI, nowości badawczych i insightów z branży. Zasilane sztuczną inteligencją.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://aifeed.pl",
   ogImage: "/og-image.png",
   links: {
     twitter: "https://twitter.com/aifeed",

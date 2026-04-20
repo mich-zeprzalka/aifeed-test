@@ -110,25 +110,15 @@ export default async function ArticlePage({ params }: PageProps) {
           </div>
 
           {/* Meta */}
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            {article.category && (
-              <Link href={`/category/${article.category.slug}`}>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
-                  {article.category.name}
-                </span>
-              </Link>
-            )}
-            {article.category && publishedDate && (
-              <span className="size-0.5 rounded-full bg-muted-foreground/30" />
-            )}
+          <div className="mb-5 flex items-center gap-3">
             {publishedDate && (
-              <span className="flex items-center gap-1 text-[11px] font-mono tracking-wide text-muted-foreground">
+              <span className="flex items-center gap-1.5 text-[11px] font-mono tracking-wide text-muted-foreground">
                 <Calendar className="size-3" />
                 {publishedDate}
               </span>
             )}
             <span className="size-0.5 rounded-full bg-muted-foreground/30" />
-            <span className="flex items-center gap-1 text-[11px] font-mono tracking-wide text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-[11px] font-mono tracking-wide text-muted-foreground">
               <Clock className="size-3" />
               {article.reading_time} min czytania
             </span>
@@ -141,11 +131,13 @@ export default async function ArticlePage({ params }: PageProps) {
             {article.title}
           </h1>
 
-          {/* Excerpt + Share */}
-          <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
-              {article.excerpt}
-            </p>
+          {/* Excerpt */}
+          <p className="mb-6 text-lg text-muted-foreground leading-relaxed max-w-2xl">
+            {article.excerpt}
+          </p>
+
+          {/* Share */}
+          <div className="mb-8">
             <ShareButtons url={articleUrl} title={article.title} />
           </div>
         </header>
@@ -201,33 +193,33 @@ export default async function ArticlePage({ params }: PageProps) {
             </ReactMarkdown>
           </div>
 
-          {/* Tags */}
+          {/* Tags — trending style */}
           {article.tags && article.tags.length > 0 && (
             <div className="mt-12 flex flex-wrap items-center gap-2">
               {article.tags.map((tag) => (
                 <Link
                   key={tag.id}
                   href={`/tag/${tag.slug}`}
-                  className="rounded-md border border-border/50 bg-muted/30 px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                  className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
-                  {tag.name}
+                  <span className="text-primary/60 mr-0.5">#</span>{tag.name}
                 </Link>
               ))}
             </div>
           )}
 
-          {/* Share (bottom) */}
-          <div className="mt-8 flex items-center justify-between rounded-xl border border-border/50 bg-card p-5">
-            <span className="text-[12px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+          {/* Share (bottom) — minimal */}
+          <div className="mt-10 pt-8 border-t border-border/40 flex items-center justify-between">
+            <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
               Udostępnij
             </span>
             <ShareButtons url={articleUrl} title={article.title} />
           </div>
 
-          {/* Sources */}
+          {/* Sources — minimal */}
           {article.source_urls.length > 0 && (
-            <div className="mt-4 rounded-xl border border-border/50 bg-card p-5">
-              <h3 className="mb-4 text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+            <div className="mt-6 pt-6 border-t border-border/40">
+              <h3 className="mb-3 text-[11px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
                 Źródła
               </h3>
               <ul className="space-y-1.5">
@@ -237,9 +229,9 @@ export default async function ArticlePage({ params }: PageProps) {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline underline-offset-4"
+                      className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <ExternalLink className="size-3 shrink-0" />
+                      <ExternalLink className="size-3 shrink-0 text-muted-foreground/50" />
                       {article.source_titles[i] || url}
                     </a>
                   </li>

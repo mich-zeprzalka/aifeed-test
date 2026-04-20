@@ -1,15 +1,22 @@
 import { Fragment } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { siteConfig } from "@/config/site";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
-interface BreadcrumbItem {
+interface BreadcrumbItemData {
   label: string;
   href?: string;
 }
 
 interface BreadcrumbsProps {
-  items: BreadcrumbItem[];
+  items: BreadcrumbItemData[];
 }
 
 export function Breadcrumbs({ items }: BreadcrumbsProps) {
@@ -30,28 +37,31 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <nav
-        aria-label="Breadcrumb"
-        className="flex items-center gap-1.5 text-[12px] font-mono text-muted-foreground/70"
-      >
-        {items.map((item, i) => (
-          <Fragment key={i}>
-            {i > 0 && <ChevronRight className="size-3 text-muted-foreground/40" />}
-            {item.href ? (
-              <Link
-                href={item.href}
-                className="hover:text-foreground transition-colors truncate max-w-[200px]"
-              >
-                {item.label}
-              </Link>
-            ) : (
-              <span className="text-muted-foreground truncate max-w-[300px]">
-                {item.label}
-              </span>
-            )}
-          </Fragment>
-        ))}
-      </nav>
+      <Breadcrumb>
+        <BreadcrumbList className="text-[12px] font-mono text-muted-foreground/70">
+          {items.map((item, i) => (
+            <Fragment key={i}>
+              {i > 0 && (
+                <BreadcrumbSeparator className="[&>svg]:size-3 text-muted-foreground/40" />
+              )}
+              <BreadcrumbItem>
+                {item.href ? (
+                  <BreadcrumbLink
+                    render={<Link href={item.href} />}
+                    className="hover:text-foreground truncate max-w-[200px]"
+                  >
+                    {item.label}
+                  </BreadcrumbLink>
+                ) : (
+                  <BreadcrumbPage className="text-muted-foreground truncate max-w-[300px] font-normal">
+                    {item.label}
+                  </BreadcrumbPage>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
+          ))}
+        </BreadcrumbList>
+      </Breadcrumb>
     </>
   );
 }
