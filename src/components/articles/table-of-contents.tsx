@@ -121,7 +121,7 @@ export function TableOfContents({ content }: TableOfContentsProps) {
       </div>
 
       {/* Desktop: sticky sidebar-style within content */}
-      <div className="hidden lg:block float-right ml-8 mb-6 w-64 sticky top-20">
+      <div className="hidden lg:block float-right ml-8 mb-6 w-64">
         <nav className="rounded-xl border border-border/60 bg-card/80 p-4">
           <p className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-widest text-muted-foreground mb-3">
             <List className="size-3.5" />
