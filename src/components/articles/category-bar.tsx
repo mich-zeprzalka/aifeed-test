@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Category } from "@/types/database";
 
@@ -17,20 +17,26 @@ export function CategoryBar({ categories }: CategoryBarProps) {
     : undefined;
   const isHome = pathname === "/";
   const activeRef = useRef<HTMLAnchorElement>(null);
-
-  const scrollToActive = useCallback(() => {
-    if (activeRef.current) {
-      activeRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "start",
-      });
-    }
-  }, []);
+  const hasScrolled = useRef(false);
 
   useEffect(() => {
-    scrollToActive();
-  }, [activeSlug, scrollToActive]);
+    hasScrolled.current = false;
+  }, [activeSlug]);
+
+  useEffect(() => {
+    if (hasScrolled.current) return;
+    const frame = requestAnimationFrame(() => {
+      if (activeRef.current && !hasScrolled.current) {
+        hasScrolled.current = true;
+        activeRef.current.scrollIntoView({
+          behavior: "instant",
+          block: "nearest",
+          inline: "start",
+        });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  });
 
   return (
     <div className="border-b border-border/40 bg-background">

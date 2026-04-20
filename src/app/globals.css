@@ -162,8 +162,10 @@
 }
 
 @utility pause-on-hover {
-  &:hover .animate-marquee {
-    animation-play-state: paused;
+  @media (hover: hover) {
+    &:hover .animate-marquee {
+      animation-play-state: paused;
+    }
   }
 }
 
