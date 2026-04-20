@@ -13,7 +13,7 @@ export default function NotFound() {
         Strona nie znaleziona
       </h1>
       <p className="mb-8 text-[15px] text-muted-foreground">
-        Strona, której szukasz nie istnieje bądź została przeniesiona.
+        Strona, której szukasz nie istnieje bądź została przeniesiona. Spróbuj wybrać inną stronę.
       </p>
       <Link
         href="/"
