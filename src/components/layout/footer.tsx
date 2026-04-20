@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
+import { NewsletterForm } from "./newsletter-form";
 
 export function Footer() {
   return (
@@ -75,16 +76,7 @@ export function Footer() {
             <p className="text-[13px] text-muted-foreground mb-4">
               Odbieraj najnowsze wieści o AI każdego dnia.
             </p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="twoj@email.pl"
-                className="flex-1 min-w-0 rounded-lg border border-border bg-card px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
-              />
-              <button className="shrink-0 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors">
-                Wyślij
-              </button>
-            </div>
+            <NewsletterForm variant="compact" />
           </div>
         </div>
 

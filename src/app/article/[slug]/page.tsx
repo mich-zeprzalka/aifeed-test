@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,6 +13,8 @@ import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+const getCachedArticle = cache((slug: string) => getArticleBySlug(slug));
+
 export const revalidate = 60;
 
 interface PageProps {
@@ -20,7 +23,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  const article = await getCachedArticle(slug);
   if (!article) return { title: "Artykuł nie znaleziony" };
 
   return {
@@ -31,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: article.excerpt,
       type: "article",
       publishedTime: article.published_at || undefined,
-      images: article.thumbnail_url ? [{ url: article.thumbnail_url }] : [],
+      images: article.thumbnail_url ? [{ url: article.thumbnail_url }] : [{ url: siteConfig.ogImage }],
     },
     twitter: {
       card: "summary_large_image",
@@ -46,7 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ArticlePage({ params }: PageProps) {
   const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  const article = await getCachedArticle(slug);
   if (!article) notFound();
 
   const allArticles = await getArticles(10);

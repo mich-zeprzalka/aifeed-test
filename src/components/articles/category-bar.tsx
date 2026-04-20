@@ -39,10 +39,10 @@ export function CategoryBar({ categories }: CategoryBarProps) {
   });
 
   return (
-    <div className="border-b border-border/40 bg-background">
+    <nav aria-label="Kategorie" className="border-b border-border/40 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <ScrollArea className="w-full">
-          <div className="flex items-center gap-2.5 py-4">
+          <div role="tablist" className="flex items-center gap-2.5 py-4">
             <Link
               href="/"
               ref={isHome && !activeSlug ? activeRef : undefined}
@@ -72,6 +72,6 @@ export function CategoryBar({ categories }: CategoryBarProps) {
           <ScrollBar orientation="horizontal" className="invisible" />
         </ScrollArea>
       </div>
-    </div>
+    </nav>
   );
 }

@@ -19,7 +19,7 @@ function FeaturedCard({ article, className }: { article: ArticleCardProps["artic
   return (
     <Link
       href={`/article/${article.slug}`}
-      className={`group relative flex flex-col h-full w-full overflow-hidden rounded-[1.25rem] bg-card card-hover ${className}`}
+      className={`group relative flex flex-col h-full w-full overflow-hidden rounded-xl bg-card card-hover ${className}`}
     >
       <div className="absolute inset-0 overflow-hidden">
         {article.thumbnail_url ? (
@@ -35,7 +35,7 @@ function FeaturedCard({ article, className }: { article: ArticleCardProps["artic
           <div className="h-full w-full bg-gradient-to-br from-primary/20 via-accent/10 to-muted" />
         )}
       </div>
-      <div className="gradient-overlay absolute inset-0 z-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+      <div className="gradient-overlay absolute inset-0 z-10" />
       <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7 z-20 flex flex-col justify-end h-full items-start">
         {article.category && (
           <span className="mb-3 rounded-md px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-white/90 bg-white/15 backdrop-blur-md border border-white/10">

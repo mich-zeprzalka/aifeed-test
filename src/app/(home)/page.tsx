@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArticleCard } from "@/components/articles/article-card";
 import { CategoryBar } from "@/components/articles/category-bar";
+import { NewsletterForm } from "@/components/layout/newsletter-form";
 import { siteConfig } from "@/config/site";
 import {
   getArticles,
@@ -45,6 +46,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <h1 className="sr-only">AiFeed — Wiadomości AI, Badania i Raporty</h1>
       <CategoryBar categories={categories} />
 
       {/* Trending Tags */}
@@ -206,15 +208,8 @@ export default async function HomePage() {
             <p className="mb-8 text-muted-foreground text-[15px] leading-relaxed">
               Najważniejsze informacje ze świata AI, dostarczane rano. Zero spamu, czysta wartość.
             </p>
-            <div className="flex items-center gap-2 mx-auto max-w-sm">
-              <input
-                type="email"
-                placeholder="twoj@email.pl"
-                className="min-w-0 flex-1 rounded-lg border border-border bg-card px-4 py-2.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all shadow-sm"
-              />
-              <button className="shrink-0 rounded-lg bg-foreground px-5 py-2.5 text-sm font-bold text-background hover:bg-foreground/90 transition-colors shadow-sm">
-                Zapisz się
-              </button>
+            <div className="mx-auto max-w-sm">
+              <NewsletterForm />
             </div>
             <p className="mt-4 text-[11px] font-mono tracking-wide text-muted-foreground/60">
               Zawsze darmowe. Zrezygnuj w dowolnej chwili.

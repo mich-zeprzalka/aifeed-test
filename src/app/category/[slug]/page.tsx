@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
+import { Newspaper } from "lucide-react";
 import { ArticleCard } from "@/components/articles/article-card";
 import { CategoryBar } from "@/components/articles/category-bar";
 import { Pagination } from "@/components/ui/pagination";
 import { Breadcrumbs } from "@/components/articles/breadcrumbs";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getCategories, getCategoryBySlug, getArticlesByCategoryPaginated } from "@/lib/data";
 import type { Metadata } from "next";
 
@@ -21,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!category) return { title: "Kategoria nie znaleziona" };
   return {
     title: `${category.name} — AiFeed`,
-    description: category.description || `Najnowsze wiadomości AI w kategorii ${category.name}`,
+    description: `Najnowsze artykuły w kategorii ${category.name} — ${category.description || "wiadomości, analizy i raporty AI"}. Czytaj na AiFeed.`,
     alternates: {
       canonical: `/category/${category.slug}`,
     },
@@ -89,12 +91,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             />
           </>
         ) : (
-          <div className="py-24 text-center">
-            <p className="text-lg text-muted-foreground">Jeszcze brak artykułów.</p>
-            <p className="mt-1 text-sm text-muted-foreground/60">
-              Wpadnij tu niedługo po nowe treści.
-            </p>
-          </div>
+          <EmptyState
+            icon={Newspaper}
+            title="Jeszcze brak artykułów w tej kategorii"
+            description="Wpadnij tu niedługo po nowe treści."
+          />
         )}
       </div>
     </>

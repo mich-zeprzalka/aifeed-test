@@ -2,9 +2,16 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search as SearchIcon } from "lucide-react";
+import { Search as SearchIcon, FileQuestion } from "lucide-react";
 import { ArticleCard } from "@/components/articles/article-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { ArticleWithRelations } from "@/lib/data";
+
+function pluralize(count: number): string {
+  if (count === 1) return "wynik";
+  if (count >= 2 && count <= 4) return "wyniki";
+  return "wyników";
+}
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -33,7 +40,6 @@ export default function SearchPage() {
     }
   }, []);
 
-  // Auto-search when landing with ?q= param (e.g. from trending tag click)
   useEffect(() => {
     if (initialQuery) {
       performSearch(initialQuery);
@@ -54,14 +60,14 @@ export default function SearchPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="mb-12 text-center">
-        <h1
-          className="mb-6 text-4xl sm:text-5xl font-heading font-extrabold tracking-tight"
-        >
+        <h1 className="mb-6 text-4xl sm:text-5xl font-heading font-extrabold tracking-tight">
           Wyszukiwarka
         </h1>
         <div className="relative mx-auto max-w-lg">
+          <label htmlFor="search-input" className="sr-only">Szukaj artykułów</label>
           <SearchIcon className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
           <input
+            id="search-input"
             type="search"
             placeholder="Szukaj newsów AI, modeli, badań..."
             value={query}
@@ -72,13 +78,15 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {searched && (
-        <p className="mb-6 text-[13px] text-muted-foreground">
-          {loading
-            ? "Szukam..."
-            : `${results.length} wynik${results.length !== 1 ? "ów" : ""} dla "${query}"`}
-        </p>
-      )}
+      <div aria-live="polite" aria-atomic="true">
+        {searched && (
+          <p className="mb-6 text-[13px] text-muted-foreground">
+            {loading
+              ? "Szukam..."
+              : `${results.length} ${pluralize(results.length)} dla "${query}"`}
+          </p>
+        )}
+      </div>
 
       {results.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2">
@@ -89,10 +97,11 @@ export default function SearchPage() {
           ))}
         </div>
       ) : searched && !loading ? (
-        <div className="py-20 text-center">
-          <p className="text-lg text-muted-foreground">Żadne artykuły nie zostały znalezione.</p>
-          <p className="mt-1 text-sm text-muted-foreground/60">Spróbuj wpisać inne hasło.</p>
-        </div>
+        <EmptyState
+          icon={FileQuestion}
+          title="Żadne artykuły nie zostały znalezione."
+          description="Spróbuj wpisać inne hasło."
+        />
       ) : null}
     </div>
   );

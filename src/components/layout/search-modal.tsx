@@ -80,7 +80,8 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           <div className="flex items-center px-4 py-3">
             <Search className="size-5 text-muted-foreground shrink-0 mr-3" />
             <input
-              type="text"
+              type="search"
+              aria-label="Szukaj artykułów"
               placeholder="Szukaj newsów AI, modeli, raportów..."
               className="flex-1 bg-transparent border-none outline-none text-base placeholder:text-muted-foreground"
               value={query}
@@ -91,7 +92,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           </div>
         </DialogHeader>
 
-        <div className="max-h-[300px] sm:max-h-[400px] overflow-y-auto no-scrollbar pb-2">
+        <div aria-live="polite" className="max-h-[300px] sm:max-h-[400px] overflow-y-auto no-scrollbar pb-2">
           {query.trim() === "" ? (
             <div className="px-6 py-10 text-center">
               <p className="text-sm text-muted-foreground">

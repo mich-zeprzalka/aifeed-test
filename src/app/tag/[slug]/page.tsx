@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { Hash } from "lucide-react";
 import { ArticleCard } from "@/components/articles/article-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getTagBySlug, getArticlesByTag } from "@/lib/data";
 import type { Metadata } from "next";
 
@@ -15,7 +17,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!tag) return { title: "Tag nie znaleziony" };
   return {
     title: `#${tag.name} — AiFeed`,
-    description: `Artykuły oznaczone tagiem #${tag.name}`,
+    description: `Najnowsze artykuły oznaczone tagiem #${tag.name} — wiadomości, analizy i raporty AI. Czytaj na AiFeed.`,
     alternates: {
       canonical: `/tag/${tag.slug}`,
     },
@@ -53,12 +55,11 @@ export default async function TagPage({ params }: PageProps) {
           ))}
         </div>
       ) : (
-        <div className="py-24 text-center">
-          <p className="text-lg text-muted-foreground">Jeszcze brak artykułów z tym tagiem.</p>
-          <p className="mt-1 text-sm text-muted-foreground/60">
-            Wpadnij tu niedługo po nowe treści.
-          </p>
-        </div>
+        <EmptyState
+          icon={Hash}
+          title="Jeszcze brak artykułów z tym tagiem"
+          description="Wpadnij tu niedługo po nowe treści."
+        />
       )}
     </div>
   );

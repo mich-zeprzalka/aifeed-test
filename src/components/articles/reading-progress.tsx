@@ -30,7 +30,14 @@ export function ReadingProgress() {
   if (progress <= 0) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] h-[3px] bg-transparent pointer-events-none">
+    <div
+      role="progressbar"
+      aria-valuenow={Math.round(progress)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label="Postęp czytania"
+      className="fixed top-0 left-0 right-0 z-[60] h-[3px] bg-transparent pointer-events-none"
+    >
       <div
         className="h-full bg-primary transition-[width] duration-150 ease-out"
         style={{ width: `${progress}%` }}

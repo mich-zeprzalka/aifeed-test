@@ -356,9 +356,33 @@ h6 {
   display: none;
 }
 
-/* Premium gradient overlays */
+/* Premium gradient overlays — theme-aware */
 .gradient-overlay {
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.25) 50%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(
+    to top,
+    oklch(0.12 0.02 260 / 0.85) 0%,
+    oklch(0.12 0.02 260 / 0.3) 50%,
+    transparent 100%
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .animate-marquee {
+    animation: none !important;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* Subtle noise texture for dark cards */
