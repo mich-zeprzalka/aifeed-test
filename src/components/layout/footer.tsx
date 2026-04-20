@@ -5,12 +5,12 @@ import { NewsletterForm } from "./newsletter-form";
 export function Footer() {
   return (
     <footer className="border-t border-border/40">
-      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" className="inline-block mb-4">
-              <span className="font-heading text-xl font-extrabold tracking-tight text-foreground">
+            <Link href="/" className="inline-block mb-3">
+              <span className="font-heading text-lg font-extrabold tracking-tight text-foreground">
                 aifeed<span className="text-primary">.</span>
               </span>
             </Link>
@@ -24,7 +24,7 @@ export function Footer() {
             <h3 className="mb-4 text-label font-semibold uppercase tracking-widest text-muted-foreground">
               Kategorie
             </h3>
-            <ul className="space-y-2.5">
+            <ul className="space-y-2">
               {siteConfig.categories.map((cat) => (
                 <li key={cat.slug}>
                   <Link
@@ -43,7 +43,7 @@ export function Footer() {
             <h3 className="mb-4 text-label font-semibold uppercase tracking-widest text-muted-foreground">
               Zasoby
             </h3>
-            <ul className="space-y-2.5">
+            <ul className="space-y-2">
               <li>
                 <Link href="/about" className="text-body-sm text-foreground/70 hover:text-foreground transition-colors">
                   O nas
@@ -80,7 +80,7 @@ export function Footer() {
           </div>
         </div>
 
-        <hr className="my-10 border-border/40" />
+        <hr className="my-8 border-border/40" />
 
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-label text-muted-foreground/60">

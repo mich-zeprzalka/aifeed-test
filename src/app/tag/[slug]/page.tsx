@@ -58,16 +58,16 @@ export default async function TagPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
       />
     )}
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-10">
-        <span className="mb-3 inline-block text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
+      <div className="mb-8">
+        <span className="mb-2 inline-block text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
           Tag
         </span>
-        <h1 className="text-3xl sm:text-4xl font-heading font-extrabold tracking-tight text-balance">
+        <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight text-balance">
           <span className="text-primary">#</span>{tag.name}
         </h1>
-        <p className="mt-3 text-lg text-muted-foreground">
+        <p className="mt-2 text-base text-muted-foreground">
           {articles.length} {articles.length === 1 ? "artykuł" : articles.length < 5 ? "artykuły" : "artykułów"} z tym tagiem
         </p>
       </div>

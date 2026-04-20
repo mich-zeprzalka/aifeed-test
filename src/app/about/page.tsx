@@ -12,13 +12,13 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Header */}
-      <header className="mb-14">
+      <header className="mb-10">
         <p className="mb-3 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           O serwisie
         </p>
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-5">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-4">
           O serwisie AiFeed
         </h1>
         <p className="text-body text-muted-foreground leading-relaxed">
@@ -28,11 +28,11 @@ export default function AboutPage() {
       </header>
 
       {/* Section: What is AiFeed */}
-      <section className="mb-14">
+      <section className="mb-10">
         <p className="mb-2 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           Czym jest AiFeed
         </p>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4">
+        <h2 className="text-lg sm:text-xl font-bold tracking-tight mb-4">
           Zautomatyzowany pipeline informacyjny
         </h2>
         <p className="text-body text-muted-foreground leading-relaxed mb-4">
@@ -49,11 +49,11 @@ export default function AboutPage() {
       </section>
 
       {/* Section: How it works */}
-      <section className="mb-14">
+      <section className="mb-10">
         <p className="mb-2 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           Jak to działa
         </p>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-6">
+        <h2 className="text-lg sm:text-xl font-bold tracking-tight mb-6">
           Od źródła do publikacji w 4 krokach
         </h2>
         <div className="space-y-6">
@@ -99,11 +99,11 @@ export default function AboutPage() {
       </section>
 
       {/* Section: Technology Stack */}
-      <section className="mb-14">
+      <section className="mb-10">
         <p className="mb-2 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           Technologia
         </p>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-6">
+        <h2 className="text-lg sm:text-xl font-bold tracking-tight mb-6">
           Stack technologiczny
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -152,7 +152,7 @@ export default function AboutPage() {
         <p className="mb-2 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           W liczbach
         </p>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-6">
+        <h2 className="text-lg sm:text-xl font-bold tracking-tight mb-6">
           AiFeed w liczbach
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

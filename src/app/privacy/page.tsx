@@ -11,13 +11,13 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Header */}
-      <header className="mb-14">
+      <header className="mb-10">
         <p className="mb-3 text-caption font-mono font-bold uppercase tracking-widest text-primary">
           Dokumenty prawne
         </p>
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-5">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-4">
           Polityka Prywatności
         </h1>
         <p className="text-body text-muted-foreground leading-relaxed">
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
       <div className="space-y-10">
         {/* Administrator danych */}
         <section>
-          <h2 className="text-xl font-bold tracking-tight mb-3">
+          <h2 className="text-lg font-bold tracking-tight mb-3">
             1. Administrator danych
           </h2>
           <p className="text-body text-muted-foreground leading-relaxed">
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
 
         {/* Zakres zbieranych danych */}
         <section>
-          <h2 className="text-xl font-bold tracking-tight mb-3">
+          <h2 className="text-lg font-bold tracking-tight mb-3">
             2. Zakres zbieranych danych
           </h2>
           <p className="text-body text-muted-foreground leading-relaxed mb-4">
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
 
         {/* Cel przetwarzania */}
         <section>
-          <h2 className="text-xl font-bold tracking-tight mb-3">
+          <h2 className="text-lg font-bold tracking-tight mb-3">
             3. Cel przetwarzania danych
           </h2>
           <ul className="space-y-2 text-body text-muted-foreground leading-relaxed list-disc pl-5">
@@ -83,7 +83,7 @@ export default function PrivacyPage() {
 
         {/* Pliki cookies */}
         <section>
-          <h2 className="text-xl font-bold tracking-tight mb-3">
+          <h2 className="text-lg font-bold tracking-tight mb-3">
             4. Pliki cookies
           </h2>
           <p className="text-body text-muted-foreground leading-relaxed mb-4">
@@ -109,7 +109,7 @@ export default function PrivacyPage() {
 
         {/* Prawa użytkownika */}
         <section>
-          <h2 className="text-xl font-bold tracking-tight mb-3">
+          <h2 className="text-lg font-bold tracking-tight mb-3">
             5. Prawa użytkownika
           </h2>
           <p className="text-body text-muted-foreground leading-relaxed mb-4">
@@ -132,7 +132,7 @@ export default function PrivacyPage() {
 
         {/* Okres przechowywania */}
         <section>
-          <h2 className="text-xl font-bold tracking-tight mb-3">
+          <h2 className="text-lg font-bold tracking-tight mb-3">
             6. Okres przechowywania danych
           </h2>
           <p className="text-body text-muted-foreground leading-relaxed">
@@ -144,7 +144,7 @@ export default function PrivacyPage() {
 
         {/* Bezpieczeństwo */}
         <section>
-          <h2 className="text-xl font-bold tracking-tight mb-3">
+          <h2 className="text-lg font-bold tracking-tight mb-3">
             7. Bezpieczeństwo danych
           </h2>
           <p className="text-body text-muted-foreground leading-relaxed">
@@ -156,7 +156,7 @@ export default function PrivacyPage() {
 
         {/* Kontakt */}
         <section>
-          <h2 className="text-xl font-bold tracking-tight mb-3">
+          <h2 className="text-lg font-bold tracking-tight mb-3">
             8. Kontakt
           </h2>
           <p className="text-body text-muted-foreground leading-relaxed">
@@ -167,7 +167,7 @@ export default function PrivacyPage() {
 
         {/* Zmiany */}
         <section>
-          <h2 className="text-xl font-bold tracking-tight mb-3">
+          <h2 className="text-lg font-bold tracking-tight mb-3">
             9. Zmiany w polityce prywatności
           </h2>
           <p className="text-body text-muted-foreground leading-relaxed">

@@ -51,17 +51,17 @@ export default async function HomePage() {
 
       {/* Trending Tags */}
       <div className="border-b border-border/30">
-        <div className="mx-auto max-w-7xl px-4 py-2.5 sm:px-6 lg:px-8 flex items-center gap-4 overflow-x-auto no-scrollbar">
-          <div className="flex shrink-0 items-center gap-1.5 text-caption font-mono font-bold text-muted-foreground uppercase tracking-widest">
-            <TrendingUp className="size-3.5" />
+        <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8 flex items-center gap-3 overflow-x-auto no-scrollbar">
+          <div className="flex shrink-0 items-center gap-1 text-caption font-mono font-bold text-muted-foreground uppercase tracking-widest">
+            <TrendingUp className="size-3" />
             Trendy
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {trendingTags.map((tag) => (
               <Link
                 key={tag.id}
                 href={`/tag/${tag.slug}`}
-                className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="shrink-0 rounded-full bg-muted/50 px-2.5 py-0.5 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 <span className="text-primary/60 mr-0.5">#</span>{tag.name}
               </Link>
@@ -75,7 +75,7 @@ export default async function HomePage() {
         <div className="grid gap-6 lg:grid-cols-12">
           {hero && (
             <div className="lg:col-span-7 xl:col-span-8 animate-fade-in-up">
-              <ArticleCard article={hero} variant="featured" className="h-full min-h-[420px] lg:min-h-[520px]" />
+              <ArticleCard article={hero} variant="featured" className="h-full min-h-[320px] lg:min-h-[420px]" />
             </div>
           )}
 
@@ -91,7 +91,7 @@ export default async function HomePage() {
 
       {/* Divider */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <hr className="my-10 border-border/40" />
+        <hr className="my-8 border-border/40" />
       </div>
 
       {/* Latest Articles Grid */}
@@ -118,7 +118,7 @@ export default async function HomePage() {
 
         return (
           <section key={cat.slug} className="border-t border-border/40">
-            <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
               {/* Section header */}
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold tracking-tight">
@@ -166,8 +166,8 @@ export default async function HomePage() {
                           <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50" />
                         )}
                       </div>
-                      <div className="p-4">
-                        <h3 className="text-sm font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300">
+                      <div className="p-3">
+                        <h3 className="text-body-sm font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300">
                           {article.title}
                         </h3>
                         <p className="mt-2 text-label font-mono text-muted-foreground">
@@ -180,7 +180,7 @@ export default async function HomePage() {
               ) : (
                 /* Layout C: Featured wide card + 2-column grid below */
                 <div className="space-y-5">
-                  <ArticleCard article={lead} variant="featured" className="min-h-[280px] lg:min-h-[340px]" />
+                  <ArticleCard article={lead} variant="featured" className="min-h-[240px] lg:min-h-[300px]" />
                   {side.length > 0 && (
                     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                       {side.map((article) => (
@@ -197,15 +197,15 @@ export default async function HomePage() {
 
       {/* Newsletter CTA */}
       <section className="border-t border-border/40 bg-muted/20 overflow-hidden">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-xl text-center">
-            <p className="mb-4 text-caption font-mono font-bold uppercase tracking-widest text-primary">
+            <p className="mb-3 text-caption font-mono font-bold uppercase tracking-widest text-primary">
               Newsletter
             </p>
-            <h2 className="mb-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-balance">
+            <h2 className="mb-3 text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-balance">
               Bądź krok przed innymi
             </h2>
-            <p className="mb-8 text-muted-foreground text-body leading-relaxed">
+            <p className="mb-6 text-muted-foreground text-body leading-relaxed">
               Najważniejsze informacje ze świata AI, dostarczane rano. Zero spamu, czysta wartość.
             </p>
             <div className="mx-auto max-w-sm">
@@ -220,13 +220,13 @@ export default async function HomePage() {
 
       {/* About / Stats */}
       <section className="border-t border-border/40 bg-gradient-to-b from-muted/30 to-background">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-2 items-center">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-2 items-center">
             <div>
-              <p className="mb-3 text-caption font-mono font-bold uppercase tracking-widest text-primary">
+              <p className="mb-2 text-caption font-mono font-bold uppercase tracking-widest text-primary">
                 O serwisie
               </p>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-balance mb-5">
+              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-balance mb-4">
                 Magazyn AI tworzony przez AI
               </h2>
               <p className="text-muted-foreground text-body leading-relaxed max-w-lg mb-4">
@@ -245,12 +245,12 @@ export default async function HomePage() {
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="group flex flex-col items-center gap-2.5 rounded-xl border border-border/40 bg-card/80 p-6 text-center transition-all duration-300 hover:border-primary/30 hover:shadow-sm"
+                  className="group flex flex-col items-center gap-2 rounded-xl border border-border/40 bg-card/80 p-4 text-center transition-all duration-300 hover:border-primary/30 hover:shadow-sm"
                 >
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary/15">
-                    <stat.icon className="size-5" />
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary/15">
+                    <stat.icon className="size-4" />
                   </div>
-                  <p className="text-2xl font-extrabold tracking-tight">{stat.value}</p>
+                  <p className="text-xl font-extrabold tracking-tight">{stat.value}</p>
                   <p className="text-label font-mono tracking-wide text-muted-foreground">{stat.label}</p>
                 </div>
               ))}

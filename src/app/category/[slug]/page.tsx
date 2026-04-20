@@ -68,7 +68,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       )}
       <CategoryBar categories={categories} />
 
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Breadcrumbs */}
         <Breadcrumbs
           items={[
@@ -78,11 +78,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         />
 
         {/* Header */}
-        <div className="mb-10 mt-4">
-          <span className="mb-3 inline-block text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
+        <div className="mb-8 mt-3">
+          <span className="mb-2 inline-block text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
             Kategoria
           </span>
-          <h1 className="text-3xl sm:text-4xl font-heading font-extrabold tracking-tight text-balance">
+          <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight text-balance">
             {category.name}
           </h1>
           {category.description && (

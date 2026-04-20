@@ -135,18 +135,18 @@ export default async function ArticlePage({ params }: PageProps) {
 
           {/* Title */}
           <h1
-            className="mb-6 text-[2.25rem] sm:text-[3rem] lg:text-[4rem] font-extrabold leading-[1.1] tracking-tight text-balance text-foreground"
+            className="mb-4 text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-[1.15] tracking-tight text-balance text-foreground"
           >
             {article.title}
           </h1>
 
           {/* Excerpt */}
-          <p className="mb-6 text-lg text-muted-foreground leading-relaxed max-w-2xl">
+          <p className="mb-5 text-base text-muted-foreground leading-relaxed max-w-2xl">
             {article.excerpt}
           </p>
 
           {/* Share */}
-          <div className="mb-8">
+          <div className="mb-6">
             <ShareButtons url={articleUrl} title={article.title} />
           </div>
         </header>
@@ -265,17 +265,17 @@ export default async function ArticlePage({ params }: PageProps) {
 
         {/* Prev / Next navigation */}
         {(adjacent.prev || adjacent.next) && (
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 mt-10">
-            <div className="flex items-stretch gap-4 border-t border-border/40 pt-8">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 mt-8">
+            <div className="flex items-stretch gap-3 border-t border-border/40 pt-6">
               {adjacent.prev ? (
                 <Link
                   href={`/article/${adjacent.prev.slug}`}
-                  className="group flex-1 flex items-start gap-3 rounded-xl border border-border/40 p-4 transition-all hover:border-primary/30 hover:bg-muted/20"
+                  className="group flex-1 flex items-start gap-2.5 rounded-lg border border-border/40 p-3 transition-all hover:border-primary/30 hover:bg-muted/20"
                 >
-                  <ChevronLeft className="size-4 shrink-0 mt-0.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <ChevronLeft className="size-3.5 shrink-0 mt-0.5 text-muted-foreground group-hover:text-primary transition-colors" />
                   <div className="min-w-0">
-                    <p className="text-label font-mono uppercase tracking-widest text-muted-foreground mb-1">Poprzedni</p>
-                    <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                    <p className="text-caption font-mono uppercase tracking-widest text-muted-foreground mb-0.5">Poprzedni</p>
+                    <p className="text-body-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                       {adjacent.prev.title}
                     </p>
                   </div>
@@ -284,15 +284,15 @@ export default async function ArticlePage({ params }: PageProps) {
               {adjacent.next ? (
                 <Link
                   href={`/article/${adjacent.next.slug}`}
-                  className="group flex-1 flex items-start gap-3 rounded-xl border border-border/40 p-4 transition-all hover:border-primary/30 hover:bg-muted/20 text-right"
+                  className="group flex-1 flex items-start gap-2.5 rounded-lg border border-border/40 p-3 transition-all hover:border-primary/30 hover:bg-muted/20 text-right"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-label font-mono uppercase tracking-widest text-muted-foreground mb-1">Następny</p>
-                    <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                    <p className="text-caption font-mono uppercase tracking-widest text-muted-foreground mb-0.5">Następny</p>
+                    <p className="text-body-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                       {adjacent.next.title}
                     </p>
                   </div>
-                  <ChevronRight className="size-4 shrink-0 mt-0.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <ChevronRight className="size-3.5 shrink-0 mt-0.5 text-muted-foreground group-hover:text-primary transition-colors" />
                 </Link>
               ) : <div className="flex-1" />}
             </div>

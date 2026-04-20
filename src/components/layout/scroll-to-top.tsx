@@ -31,13 +31,13 @@ export function ScrollToTop() {
     <button
       onClick={scrollToTop}
       aria-label="Wróć na górę"
-      className={`fixed bottom-6 right-6 z-40 flex size-10 items-center justify-center rounded-full border border-border/60 bg-card/90 backdrop-blur-sm text-muted-foreground shadow-lg transition-all duration-300 hover:text-foreground hover:border-primary/40 hover:shadow-xl ${
+      className={`fixed bottom-5 right-5 z-40 flex size-8 items-center justify-center rounded-full border border-border/60 bg-card/90 backdrop-blur-sm text-muted-foreground shadow-md transition-all duration-300 hover:text-foreground hover:border-primary/40 hover:shadow-lg ${
         visible
           ? "translate-y-0 opacity-100"
           : "translate-y-4 opacity-0 pointer-events-none"
       }`}
     >
-      <ArrowUp className="size-4" />
+      <ArrowUp className="size-3.5" />
     </button>
   );
 }

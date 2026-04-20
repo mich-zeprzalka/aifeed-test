@@ -58,21 +58,21 @@ export default function SearchPage() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-      <div className="mb-12 text-center">
-        <h1 className="mb-6 text-4xl sm:text-5xl font-heading font-extrabold tracking-tight">
+    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mb-8 text-center">
+        <h1 className="mb-4 text-2xl sm:text-3xl font-heading font-extrabold tracking-tight">
           Wyszukiwarka
         </h1>
         <div className="relative mx-auto max-w-lg">
           <label htmlFor="search-input" className="sr-only">Szukaj artykułów</label>
-          <SearchIcon className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
+          <SearchIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
           <input
             id="search-input"
             type="search"
             placeholder="Szukaj newsów AI, modeli, badań..."
             value={query}
             onChange={handleChange}
-            className="w-full h-12 rounded-xl border border-border bg-card pl-11 pr-4 text-body placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
+            className="w-full h-10 rounded-lg border border-border bg-card pl-10 pr-4 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
             autoFocus
           />
         </div>
