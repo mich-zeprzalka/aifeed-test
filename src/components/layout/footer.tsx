@@ -8,12 +8,9 @@ export function Footer() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="flex size-7 items-center justify-center rounded-lg bg-foreground text-background">
-                <span className="text-xs font-bold tracking-tight">Ai</span>
-              </div>
-              <span className="text-base font-bold tracking-tight">
-                {siteConfig.name}
+            <Link href="/" className="inline-block mb-4">
+              <span className="font-heading text-xl font-extrabold tracking-tight text-foreground">
+                aifeed<span className="text-primary">.</span>
               </span>
             </Link>
             <p className="text-[13px] text-muted-foreground leading-relaxed max-w-xs">
@@ -71,7 +68,7 @@ export function Footer() {
           </div>
 
           {/* Newsletter */}
-          <div>
+          <div className="overflow-hidden">
             <h3 className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Bądź na bieżąco
             </h3>

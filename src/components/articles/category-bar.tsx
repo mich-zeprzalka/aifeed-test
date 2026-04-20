@@ -1,13 +1,21 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import type { Category } from "@/types/database";
 
 interface CategoryBarProps {
   categories: Category[];
-  activeSlug?: string;
 }
 
-export function CategoryBar({ categories, activeSlug }: CategoryBarProps) {
+export function CategoryBar({ categories }: CategoryBarProps) {
+  const pathname = usePathname();
+  const activeSlug = pathname.startsWith("/category/")
+    ? pathname.split("/")[2]
+    : undefined;
+  const isHome = pathname === "/";
+
   return (
     <div className="border-b border-border/40 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -16,7 +24,7 @@ export function CategoryBar({ categories, activeSlug }: CategoryBarProps) {
             <Link
               href="/"
               className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                !activeSlug
+                isHome && !activeSlug
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}

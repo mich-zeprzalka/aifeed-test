@@ -194,7 +194,7 @@ export default async function HomePage() {
       })}
 
       {/* Newsletter CTA */}
-      <section className="border-t border-border/40 bg-muted/20">
+      <section className="border-t border-border/40 bg-muted/20 overflow-hidden">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-xl text-center">
             <p className="mb-4 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
@@ -210,7 +210,7 @@ export default async function HomePage() {
               <input
                 type="email"
                 placeholder="twoj@email.pl"
-                className="flex-1 rounded-lg border border-border bg-card px-4 py-2.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all shadow-sm"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-card px-4 py-2.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all shadow-sm"
               />
               <button className="shrink-0 rounded-lg bg-foreground px-5 py-2.5 text-sm font-bold text-background hover:bg-foreground/90 transition-colors shadow-sm">
                 Zapisz się
@@ -224,32 +224,37 @@ export default async function HomePage() {
       </section>
 
       {/* About / Stats */}
-      <section className="border-t border-border/40">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="grid gap-10 lg:grid-cols-2 items-center">
+      <section className="border-t border-border/40 bg-gradient-to-b from-muted/30 to-background">
+        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+          <div className="grid gap-12 lg:grid-cols-2 items-center">
             <div>
-              <p className="mb-3 text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+              <p className="mb-3 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
                 O serwisie
               </p>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-balance mb-4">
-                Twoje codzienne źródło wiedzy o AI
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-balance mb-5">
+                Magazyn AI tworzony przez AI
               </h2>
+              <p className="text-muted-foreground text-[15px] leading-relaxed max-w-lg mb-4">
+                AiFeed to w pełni zautomatyzowany serwis informacyjny. Nasz pipeline monitoruje źródła RSS, analizuje i selekcjonuje newsy, a następnie generuje kompletne artykuły w języku polskim — z&nbsp;miniaturkami, tagami i&nbsp;kategoryzacją.
+              </p>
               <p className="text-muted-foreground text-[15px] leading-relaxed max-w-lg">
-                AiFeed automatycznie monitoruje najważniejsze źródła informacji o sztucznej inteligencji, generuje profesjonalne artykuły i dostarcza je w przystępnej formie. Codziennie, bez przerw.
+                Wszystko działa autonomicznie — od pobrania surowych danych, przez redakcję treści, po publikację na stronie. Codziennie, bez przerw, bez&nbsp;ludzkiej interwencji.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
                 { icon: Newspaper, value: "50+", label: "Artykułów tygodniowo" },
                 { icon: Layers, value: "6", label: "Kategorii tematycznych" },
-                { icon: Rss, value: "8", label: "Źródeł RSS" },
-                { icon: Zap, value: "24/7", label: "Automatyczny monitoring" },
+                { icon: Rss, value: "10+", label: "Źródeł RSS" },
+                { icon: Zap, value: "24/7", label: "Automatyczny pipeline" },
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="flex flex-col items-center gap-2 rounded-xl border border-border/40 bg-card/50 p-5 text-center"
+                  className="group flex flex-col items-center gap-2.5 rounded-xl border border-border/40 bg-card/80 p-6 text-center transition-all duration-300 hover:border-primary/30 hover:shadow-sm"
                 >
-                  <stat.icon className="size-5 text-primary" />
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary/15">
+                    <stat.icon className="size-5" />
+                  </div>
                   <p className="text-2xl font-extrabold tracking-tight">{stat.value}</p>
                   <p className="text-[11px] font-mono tracking-wide text-muted-foreground">{stat.label}</p>
                 </div>
