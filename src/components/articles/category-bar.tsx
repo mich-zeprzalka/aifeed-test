@@ -42,11 +42,11 @@ export function CategoryBar({ categories }: CategoryBarProps) {
     <nav aria-label="Kategorie" className="border-b border-border/40 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <ScrollArea className="w-full">
-          <div role="tablist" className="flex items-center gap-1.5 py-2.5">
+          <div role="tablist" className="flex items-center gap-2 py-3">
             <Link
               href="/"
               ref={isHome && !activeSlug ? activeRef : undefined}
-              className={`shrink-0 rounded-full px-3 py-1 text-body-sm font-medium transition-colors ${
+              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 isHome && !activeSlug
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -59,7 +59,7 @@ export function CategoryBar({ categories }: CategoryBarProps) {
                 key={cat.slug}
                 href={`/category/${cat.slug}`}
                 ref={activeSlug === cat.slug ? activeRef : undefined}
-                className={`shrink-0 rounded-full px-3 py-1 text-body-sm font-medium transition-colors ${
+                className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   activeSlug === cat.slug
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"

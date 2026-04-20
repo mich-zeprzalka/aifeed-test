@@ -36,7 +36,7 @@ export function ReadingProgress() {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label="Postęp czytania"
-      className="fixed top-0 left-0 right-0 z-[60] h-[2px] bg-transparent pointer-events-none"
+      className="fixed top-0 left-0 right-0 z-[60] h-[3px] bg-transparent pointer-events-none"
     >
       <div
         className="h-full bg-primary transition-[width] duration-150 ease-out"

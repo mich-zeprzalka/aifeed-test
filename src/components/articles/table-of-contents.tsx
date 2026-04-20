@@ -102,7 +102,7 @@ export function TableOfContents({ content }: TableOfContentsProps) {
                   <li key={h.id}>
                     <button
                       onClick={() => handleClick(h.id)}
-                      className={`block w-full text-left text-body-sm leading-relaxed transition-colors hover:text-foreground ${
+                      className={`block w-full text-left text-sm leading-relaxed transition-colors hover:text-foreground ${
                         h.level === 3 ? "pl-4" : ""
                       } ${
                         activeId === h.id
@@ -123,7 +123,7 @@ export function TableOfContents({ content }: TableOfContentsProps) {
       {/* Desktop: sticky sidebar-style within content */}
       <div className="hidden lg:block float-right ml-6 mb-4 w-56">
         <nav className="rounded-xl border border-border/60 bg-card/80 p-4">
-          <p className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-widest text-muted-foreground mb-3">
+          <p className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground mb-3">
             <List className="size-3.5" />
             Spis treści
           </p>
@@ -132,7 +132,7 @@ export function TableOfContents({ content }: TableOfContentsProps) {
               <li key={h.id}>
                 <button
                   onClick={() => handleClick(h.id)}
-                  className={`block w-full text-left text-body-sm leading-relaxed transition-colors hover:text-foreground ${
+                  className={`block w-full text-left text-sm leading-relaxed transition-colors hover:text-foreground ${
                     h.level === 3 ? "pl-3 border-l border-border/40" : ""
                   } ${
                     activeId === h.id

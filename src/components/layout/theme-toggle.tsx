@@ -30,9 +30,9 @@ export function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label="Zmień motyw"
-      className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+      className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
     >
-      {dark ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </button>
   );
 }

@@ -41,7 +41,7 @@ export function NewsletterForm({ variant = "default" }: NewsletterFormProps) {
 
   if (status === "success") {
     return (
-      <div className="flex items-center gap-1.5 text-body-sm text-green-600 dark:text-green-400">
+      <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
         <Check className="size-3.5" />
         <span>{message}</span>
       </div>
@@ -51,7 +51,7 @@ export function NewsletterForm({ variant = "default" }: NewsletterFormProps) {
   const isCompact = variant === "compact";
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-1.5">
+    <form onSubmit={handleSubmit} className="flex gap-2">
       <input
         type="email"
         required
@@ -62,17 +62,17 @@ export function NewsletterForm({ variant = "default" }: NewsletterFormProps) {
           setEmail(e.target.value);
           if (status === "error") setStatus("idle");
         }}
-        className={`min-w-0 flex-1 rounded-md border bg-card text-body-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all ${
+        className={`min-w-0 flex-1 rounded-lg border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all ${
           status === "error"
             ? "border-destructive"
             : "border-border"
-        } ${isCompact ? "px-2.5 py-1.5" : "px-3 py-2"}`}
+        } ${isCompact ? "px-3 py-2" : "px-4 py-2.5"}`}
       />
       <button
         type="submit"
         disabled={status === "loading"}
-        className={`shrink-0 rounded-md bg-foreground font-medium text-background hover:bg-foreground/90 transition-colors disabled:opacity-50 ${
-          isCompact ? "px-3 py-1.5 text-body-sm" : "px-4 py-2 text-body-sm font-bold"
+        className={`shrink-0 rounded-lg bg-foreground font-medium text-background hover:bg-foreground/90 transition-colors disabled:opacity-50 ${
+          isCompact ? "px-4 py-2 text-sm" : "px-5 py-2.5 text-sm font-bold"
         }`}
       >
         {status === "loading" ? (

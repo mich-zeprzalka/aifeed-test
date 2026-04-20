@@ -121,13 +121,13 @@ export default async function ArticlePage({ params }: PageProps) {
           {/* Meta */}
           <div className="mb-5 flex items-center gap-3">
             {publishedDate && (
-              <span className="flex items-center gap-1.5 text-label font-mono tracking-wide text-muted-foreground">
+              <span className="flex items-center gap-1.5 text-xs font-mono tracking-wide text-muted-foreground">
                 <Calendar className="size-3" />
                 {publishedDate}
               </span>
             )}
             <span className="size-0.5 rounded-full bg-muted-foreground/30" />
-            <span className="flex items-center gap-1.5 text-label font-mono tracking-wide text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-xs font-mono tracking-wide text-muted-foreground">
               <Clock className="size-3" />
               {article.reading_time} min czytania
             </span>
@@ -165,7 +165,7 @@ export default async function ArticlePage({ params }: PageProps) {
               />
             </div>
             {article.thumbnail_source && article.source_urls[0] && (
-              <p className="mt-2 text-center text-label font-mono text-muted-foreground/60">
+              <p className="mt-2 text-center text-xs font-mono text-muted-foreground/60">
                 Źródło zdjęcia:{" "}
                 <a
                   href={article.source_urls[0]}
@@ -222,7 +222,7 @@ export default async function ArticlePage({ params }: PageProps) {
                 <Link
                   key={tag.id}
                   href={`/tag/${tag.slug}`}
-                  className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <span className="text-primary/60 mr-0.5">#</span>{tag.name}
                 </Link>
@@ -232,7 +232,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
           {/* Share (bottom) — minimal */}
           <div className="mt-10 pt-8 border-t border-border/40 flex items-center justify-between">
-            <span className="text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground">
               Udostępnij
             </span>
             <ShareButtons url={articleUrl} title={article.title} />
@@ -241,7 +241,7 @@ export default async function ArticlePage({ params }: PageProps) {
           {/* Sources — minimal */}
           {article.source_urls.length > 0 && (
             <div className="mt-6 pt-6 border-t border-border/40">
-              <h3 className="mb-3 text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
+              <h3 className="mb-3 text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground">
                 Źródła
               </h3>
               <ul className="space-y-1.5">
@@ -251,7 +251,7 @@ export default async function ArticlePage({ params }: PageProps) {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-body-sm text-muted-foreground hover:text-foreground transition-colors"
+                      className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <ExternalLink className="size-3 shrink-0 text-muted-foreground/50" />
                       {article.source_titles[i] || url}
@@ -274,8 +274,8 @@ export default async function ArticlePage({ params }: PageProps) {
                 >
                   <ChevronLeft className="size-3.5 shrink-0 mt-0.5 text-muted-foreground group-hover:text-primary transition-colors" />
                   <div className="min-w-0">
-                    <p className="text-caption font-mono uppercase tracking-widest text-muted-foreground mb-0.5">Poprzedni</p>
-                    <p className="text-body-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-0.5">Poprzedni</p>
+                    <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                       {adjacent.prev.title}
                     </p>
                   </div>
@@ -287,8 +287,8 @@ export default async function ArticlePage({ params }: PageProps) {
                   className="group flex-1 flex items-start gap-2.5 rounded-lg border border-border/40 p-3 transition-all hover:border-primary/30 hover:bg-muted/20 text-right"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-caption font-mono uppercase tracking-widest text-muted-foreground mb-0.5">Następny</p>
-                    <p className="text-body-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-0.5">Następny</p>
+                    <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                       {adjacent.next.title}
                     </p>
                   </div>

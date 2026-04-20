@@ -36,9 +36,9 @@ function FeaturedCard({ article, className }: { article: ArticleCardProps["artic
         )}
       </div>
       <div className="gradient-overlay absolute inset-0 z-10" />
-      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 z-20 flex flex-col justify-end h-full items-start">
+      <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7 z-20 flex flex-col justify-end h-full items-start">
         {article.category && (
-          <span className="mb-2 rounded-md px-2 py-0.5 text-caption font-mono font-bold uppercase tracking-widest text-white/90 bg-white/15 backdrop-blur-md border border-white/10">
+          <span className="mb-2 rounded-md px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-widest text-white/90 bg-white/15 backdrop-blur-md border border-white/10">
             {article.category.name}
           </span>
         )}
@@ -80,19 +80,19 @@ function DefaultCard({ article, className }: { article: ArticleCardProps["articl
           <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50" />
         )}
       </div>
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-5">
         {article.category && (
-          <span className="mb-2 inline-block w-fit text-caption font-mono font-bold uppercase tracking-widest text-muted-foreground">
+          <span className="mb-2 inline-block w-fit text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
             {article.category.name}
           </span>
         )}
         <h3 className="mb-2 text-base line-clamp-2 group-hover:text-primary transition-colors duration-300">
           {article.title}
         </h3>
-        <p className="mb-4 text-body-sm text-muted-foreground leading-relaxed line-clamp-2 flex-1">
+        <p className="mb-4 text-sm text-muted-foreground leading-relaxed line-clamp-2 flex-1">
           {article.excerpt}
         </p>
-        <div className="flex items-center gap-3 text-label font-mono tracking-wide text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs font-mono tracking-wide text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Clock className="size-3" />
             {article.reading_time} min
@@ -109,11 +109,11 @@ function CompactCard({ article, className }: { article: ArticleCardProps["articl
   return (
     <Link
       href={`/article/${article.slug}`}
-      className={`group flex gap-3 rounded-lg border border-transparent p-2 transition-colors hover:bg-muted/40 hover:border-border/30 ${className}`}
+      className={`group flex gap-4 rounded-lg border border-transparent p-2 transition-colors hover:bg-muted/40 hover:border-border/30 ${className}`}
     >
-      <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted">
+      <div className="relative size-24 shrink-0 overflow-hidden rounded-lg bg-muted">
         {article.thumbnail_url ? (
-          <Image src={article.thumbnail_url} alt={article.title} fill className="object-cover" sizes="80px" />
+          <Image src={article.thumbnail_url} alt={article.title} fill className="object-cover" sizes="96px" />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50" />
         )}
@@ -127,7 +127,7 @@ function CompactCard({ article, className }: { article: ArticleCardProps["articl
         <h4 className="text-sm font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 pr-2">
           {article.title}
         </h4>
-        <span className="mt-2 text-caption font-mono text-muted-foreground">
+        <span className="mt-2 text-[10px] font-mono text-muted-foreground">
           {formatDate(article.published_at)}
         </span>
       </div>

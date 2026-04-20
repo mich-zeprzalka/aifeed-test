@@ -79,7 +79,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
         {/* Header */}
         <div className="mb-8 mt-3">
-          <span className="mb-2 inline-block text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
+          <span className="mb-2 inline-block text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground">
             Kategoria
           </span>
           <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight text-balance">

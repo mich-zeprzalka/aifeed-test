@@ -61,7 +61,7 @@ export default async function TagPage({ params }: PageProps) {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
-        <span className="mb-2 inline-block text-label font-mono font-bold uppercase tracking-widest text-muted-foreground">
+        <span className="mb-2 inline-block text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground">
           Tag
         </span>
         <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight text-balance">

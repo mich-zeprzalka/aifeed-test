@@ -36,13 +36,13 @@ export function Pagination({
         {hasPrev ? (
           <Link
             href={basePath}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-card px-3.5 py-2 text-body-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-card px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <ChevronLeft className="size-3.5" />
             Nowsze
           </Link>
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/30 px-3.5 py-2 text-body-sm font-medium text-muted-foreground/40 cursor-not-allowed">
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/30 px-3.5 py-2 text-sm font-medium text-muted-foreground/40 cursor-not-allowed">
             <ChevronLeft className="size-3.5" />
             Nowsze
           </span>
@@ -51,13 +51,13 @@ export function Pagination({
         {nextCursor ? (
           <Link
             href={`${basePath}?cursor=${encodeURIComponent(nextCursor)}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-card px-3.5 py-2 text-body-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-card px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             Starsze
             <ChevronRight className="size-3.5" />
           </Link>
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/30 px-3.5 py-2 text-body-sm font-medium text-muted-foreground/40 cursor-not-allowed">
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/30 px-3.5 py-2 text-sm font-medium text-muted-foreground/40 cursor-not-allowed">
             Starsze
             <ChevronRight className="size-3.5" />
           </span>

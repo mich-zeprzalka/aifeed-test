@@ -33,12 +33,12 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
                 <span key={i} className="contents">
                   <Link
                     href={`/article/${item.slug}`}
-                    className="shrink-0 py-1 text-caption text-background/70 hover:text-background transition-colors"
+                    className="shrink-0 py-1.5 text-xs text-background/70 hover:text-background transition-colors"
                     tabIndex={copy === 1 ? -1 : undefined}
                   >
                     {item.title}
                   </Link>
-                  <span className="shrink-0 text-background/30 text-[7px] mx-1.5" aria-hidden="true">&bull;</span>
+                  <span className="shrink-0 text-background/30 text-[8px] mx-2" aria-hidden="true">&bull;</span>
                 </span>
               ))}
             </div>
@@ -48,10 +48,10 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
 
       {/* Main Header — sticky */}
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
           <Link href="/" className="group flex shrink-0 items-center gap-2">
-            <span className="font-heading text-lg font-extrabold tracking-tight text-foreground">
+            <span className="font-heading text-xl font-extrabold tracking-tight text-foreground">
               aifeed<span className="text-primary">.</span>
             </span>
           </Link>
@@ -64,7 +64,7 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${active
+                  className={`relative rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${active
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                     }`}
@@ -76,22 +76,22 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
           </nav>
 
           {/* Right actions */}
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Szukaj"
-              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
-              <Search className="size-3.5" />
+              <Search className="size-4" />
             </button>
             <ThemeToggle />
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors md:hidden"
+              className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors md:hidden"
               aria-label="Menu"
             >
-              {mobileOpen ? <X className="size-3.5" /> : <Menu className="size-3.5" />}
+              {mobileOpen ? <X className="size-4" /> : <Menu className="size-4" />}
             </button>
           </div>
         </div>

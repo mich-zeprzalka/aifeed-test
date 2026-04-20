@@ -80,7 +80,7 @@ export default function SearchPage() {
 
       <div aria-live="polite" aria-atomic="true">
         {searched && (
-          <p className="mb-6 text-body-sm text-muted-foreground">
+          <p className="mb-6 text-sm text-muted-foreground">
             {loading
               ? "Szukam..."
               : `${results.length} ${pluralize(results.length)} dla "${query}"`}
