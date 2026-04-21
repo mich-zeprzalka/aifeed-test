@@ -11,14 +11,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
 
   const articleUrls = articles.map((article) => ({
-    url: `${baseUrl}/article/${article.slug}`,
+    url: `${baseUrl}/artykul/${article.slug}`,
     lastModified: new Date(article.updated_at),
     changeFrequency: "weekly" as const,
     priority: article.is_featured ? 0.9 : 0.7,
   }));
 
   const categoryUrls = categories.map((cat) => ({
-    url: `${baseUrl}/category/${cat.slug}`,
+    url: `${baseUrl}/kategoria/${cat.slug}`,
     lastModified: new Date(),
     changeFrequency: "daily" as const,
     priority: 0.8,
@@ -39,18 +39,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${baseUrl}/about`,
+      url: `${baseUrl}/o-serwisie`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.4,
     },
     {
-      url: `${baseUrl}/privacy`,
+      url: `${baseUrl}/polityka-prywatnosci`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.3,
     },
-    // /search intentionally omitted — it's noindex'd (thin content) and has
+    // /szukaj intentionally omitted — it's noindex'd (thin content) and has
     // no standalone value as a discoverable URL.
     ...categoryUrls,
     ...tagUrls,

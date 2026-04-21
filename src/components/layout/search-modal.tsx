@@ -106,7 +106,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
               {results.map((result) => (
                 <Link
                   key={result.id}
-                  href={`/article/${result.slug}`}
+                  href={`/artykul/${result.slug}`}
                   onClick={() => onOpenChange(false)}
                   className="px-4 py-3 hover:bg-muted/50 transition-colors flex items-start gap-4 group border-b border-border/20 last:border-0"
                 >

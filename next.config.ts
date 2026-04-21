@@ -32,6 +32,18 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**" },
     ],
   },
+  // 301 redirects for the English → Polish URL migration. External links,
+  // Google index, RSS readers and newsletter archives that still reference
+  // the old paths land on the Polish canonical instead of a 404.
+  async redirects() {
+    return [
+      { source: "/article/:slug", destination: "/artykul/:slug", permanent: true },
+      { source: "/category/:slug", destination: "/kategoria/:slug", permanent: true },
+      { source: "/search", destination: "/szukaj", permanent: true },
+      { source: "/about", destination: "/o-serwisie", permanent: true },
+      { source: "/privacy", destination: "/polityka-prywatnosci", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

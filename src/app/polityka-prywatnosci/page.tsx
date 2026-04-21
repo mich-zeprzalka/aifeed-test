@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description:
     "Polityka prywatności serwisu AiFeed. Dowiedz się, jakie dane zbieramy i jak je przetwarzamy.",
   alternates: {
-    canonical: "/privacy",
+    canonical: "/polityka-prywatnosci",
   },
 };
 

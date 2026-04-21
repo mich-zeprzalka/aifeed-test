@@ -85,12 +85,13 @@ Pipeline leci w Vercel Cron 3× dziennie (5:00, 11:00, 17:00 UTC — konfiguracj
                                ▼
         ┌──────────────────────────────────────────┐
         │  Next.js 16 App Router (RSC + ISR)        │
-        │  /                    → home              │
-        │  /article/[slug]      → post              │
-        │  /category/[slug]?page=N → category list  │
-        │  /tag/[slug]          → tag list          │
-        │  /search              → client search     │
-        │  /about /privacy                          │
+        │  /                       → home           │
+        │  /artykul/[slug]         → post           │
+        │  /kategoria/[slug]?page=N → category list │
+        │  /tag/[slug]             → tag list       │
+        │  /szukaj                 → client search  │
+        │  /o-serwisie                              │
+        │  /polityka-prywatnosci                    │
         │  /sitemap.xml /robots.txt /feed.xml       │
         └──────────────────────────────────────────┘
                                │
@@ -161,7 +162,9 @@ aifeed/
 │   └── examples/                 # 5 mockupów HTML (poza App Router)
 │
 ├── supabase/
-│   └── schema.sql                # tabele + RLS + RPC + seed kategorii
+│   ├── schema.sql                # pełny schemat (tabele + RLS + RPC + seed)
+│   └── migrations/
+│       └── 001_newsletter_and_popular_tags.sql  # wydzielona migracja idempotentna
 │
 ├── public/                       # favicon, icons, og-image
 │
@@ -180,17 +183,18 @@ aifeed/
     │   ├── (home)/
     │   │   ├── loading.tsx
     │   │   └── page.tsx          # hero + latest + category highlights + newsletter
-    │   ├── about/page.tsx
-    │   ├── privacy/page.tsx
-    │   ├── search/
+    │   ├── o-serwisie/page.tsx
+    │   ├── polityka-prywatnosci/page.tsx
+    │   ├── szukaj/
+    │   │   ├── layout.tsx        # metadata { robots: noindex } + canonical
     │   │   ├── loading.tsx
     │   │   └── page.tsx          # client, debounce 300ms, maxLength 100
     │   │
-    │   ├── article/[slug]/
+    │   ├── artykul/[slug]/
     │   │   ├── page.tsx          # breadcrumbs + TOC + prose + share + adjacent + related
     │   │   ├── loading.tsx
     │   │   └── error.tsx
-    │   ├── category/[slug]/
+    │   ├── kategoria/[slug]/
     │   │   ├── page.tsx          # offset-based pagination ?page=N
     │   │   └── loading.tsx
     │   ├── tag/[slug]/
@@ -225,6 +229,8 @@ aifeed/
     │   ├── rate-limit.ts         # in-memory sliding window
     │   ├── rate-limit.test.ts
     │   ├── utils.ts              # cn()
+    │   ├── hooks/
+    │   │   └── use-scroll-y.ts   # shared window.scrollY subscription (useSyncExternalStore)
     │   │
     │   ├── ai/
     │   │   ├── prompts.ts        # ARTICLE_SYSTEM_PROMPT + USER_PROMPT
@@ -423,19 +429,35 @@ Próg odrzucenia: score < 50.
 
 ## 9. Routing i strony
 
+URL-e w 100% polskie — SEO pod polski rynek. Starsze angielskie ścieżki (`/article`, `/category`, `/search`, `/about`, `/privacy`) są przekierowywane **HTTP 301** w `next.config.ts::redirects()` (zachowuje link equity i boty Google).
+
 | Route | Typ | Revalidate | Uwagi |
 |---|---|---|---|
 | `/` | Server, `(home)` route group | 300s | Hero + featured + latest (6 cards) + 4 sekcje kategorii (3 układy naprzemiennie) + newsletter + about/stats |
-| `/article/[slug]` | Server | 60s | Breadcrumbs + TOC + prose-article + share + adjacent + related; `NewsArticle` JSON-LD |
-| `/category/[slug]?page=N` | Server | 300s | Offset-based pagination, `rel=prev/next`, `ItemList` JSON-LD |
+| `/artykul/[slug]` | Server | 60s | Breadcrumbs + TOC + prose-article + share + adjacent + related; `NewsArticle` JSON-LD |
+| `/kategoria/[slug]?page=N` | Server | 300s | Offset-based pagination, `rel=prev/next`, `ItemList` JSON-LD |
 | `/tag/[slug]` | Server | 300s | `CollectionPage` + `ItemList` JSON-LD, limit 50 |
-| `/search` | Client + `layout.tsx` z metadata | — | Debounce 300ms, `maxLength=100`, `?q=` initial. **Noindex** (`robots: index:false`), wyłączone z sitemap, disallowed w `robots.txt` — chroni SERP przed cienką treścią z `?q=…` |
-| `/about` | Server (static) | — | canonical `/about` |
-| `/privacy` | Server (static) | — | canonical `/privacy` |
-| `/feed.xml` | Route handler | 3600s | RSS 2.0 z CDATA + escape XML + `<atom:link rel="self">` |
-| `/sitemap.xml` | Metadata route | — | Articles (priority 0.9/0.7) + categories (0.8) + tags (0.5) + `/`, `/about`, `/privacy` |
-| `/robots.txt` | Metadata route | — | `Allow: /`, `Disallow: /api/`, `/admin/`, `/search` |
+| `/szukaj` | Client + `layout.tsx` z metadata | — | Debounce 300ms, `maxLength=100`, `?q=` initial. **Noindex** (`robots: index:false`), wyłączone z sitemap, disallowed w `robots.txt` — chroni SERP przed cienką treścią z `?q=…` |
+| `/o-serwisie` | Server (static) | — | canonical `/o-serwisie` |
+| `/polityka-prywatnosci` | Server (static) | — | canonical `/polityka-prywatnosci` |
+| `/feed.xml` | Route handler | 3600s | RSS 2.0 z CDATA + escape XML + `<atom:link rel="self">` (linki artykułów `/artykul/[slug]`) |
+| `/sitemap.xml` | Metadata route | — | Articles (priority 0.9/0.7) + categories (0.8) + tags (0.5) + `/`, `/o-serwisie`, `/polityka-prywatnosci` |
+| `/robots.txt` | Metadata route | — | `Allow: /`, `Disallow: /api/`, `/admin/`, `/szukaj` |
 | `/manifest.webmanifest` | Metadata route | — | PWA manifest, `lang: pl` |
+
+### Przekierowania 301 (z angielskich URL-i)
+```ts
+// next.config.ts
+async redirects() {
+  return [
+    { source: "/article/:slug",  destination: "/artykul/:slug",              permanent: true },
+    { source: "/category/:slug", destination: "/kategoria/:slug",            permanent: true },
+    { source: "/search",         destination: "/szukaj",                     permanent: true },
+    { source: "/about",          destination: "/o-serwisie",                 permanent: true },
+    { source: "/privacy",        destination: "/polityka-prywatnosci",       permanent: true },
+  ];
+}
+```
 
 ### Skróty klawiszowe
 - **Ctrl+K / Cmd+K** — toggle `SearchModal`
@@ -453,7 +475,7 @@ Próg odrzucenia: score < 50.
 | `NewsTicker` | client | Marquee na WAAPI (`Element.animate()`). `memo` z compare po slugach + `ResizeObserver` + `document.fonts.ready` — nieprzerwany przy nawigacji, odporny na font swap |
 | `Footer` | server | Branding, kategorie, linki, newsletter |
 | `NewsletterForm` | client | POST /api/newsletter, states idle/loading/success/error |
-| `ScrollToTop` | client | `useLayoutEffect` z `behavior: "instant"` na route change (bez flicker "w połowie → top"). Hash anchors pomijane (browser skroluje do targetu). Floating button z `scrollTo({behavior: "smooth"})` |
+| `ScrollToTop` | client | `useLayoutEffect` z `behavior: "instant"` na route change (bez flicker "w połowie → top"). Hash anchors pomijane. Floating button z `scrollTo({behavior: "smooth"})`. Widoczność przez wspólny `useScrollY()` — zamiast własnego `scroll` listenera |
 | `SearchModal` | client | Debounce 400ms, abort-aware fetch, `maxLength=100` |
 | `ThemeToggle` | client | `useSyncExternalStore` + MutationObserver na `html.class` |
 
@@ -464,7 +486,7 @@ Próg odrzucenia: score < 50.
 | `ArticleCard` | server | 3 warianty: `default` (`<h3>`) / `featured` (`<h2>`) / `compact` (`<h4>`) |
 | `Breadcrumbs` | server | + `BreadcrumbList` JSON-LD (przez `jsonLdScript`) |
 | `CategoryBar` | client | `<nav aria-label="Kategorie">` z `aria-current="page"` na aktywnym linku. Scroll position persist w sessionStorage. "Wszystko" aktywne gdy `pathname === "/"` |
-| `ReadingProgress` | client | `role="progressbar"`, fixed top |
+| `ReadingProgress` | client | `role="progressbar"`, fixed top. Pozycja przez wspólny `useScrollY()`; wymiary artykułu mierzone raz + ResizeObserver; sam progres **derived state** w renderze (zgodne z React 19 `set-state-in-effect` rule) |
 | `ShareButtons` | client | X / LinkedIn / Facebook + copy + `navigator.share` (progressive) |
 | `TableOfContents` | client | Lista `#id` anchorów ze `slugifyHeading()` (ta sama funkcja co markdown renderer → spójne kotwice) |
 
@@ -472,6 +494,9 @@ Próg odrzucenia: score < 50.
 `Avatar`, `Badge`, `Breadcrumb`, `Button`, `Card`, `Dialog`, `DropdownMenu`, `EmptyState`, `Input`, `InputGroup`, `NavigationMenu`, `Pagination`, `ScrollArea`, `Separator`, `Sheet`, `Skeleton`, `Textarea`.
 
 `Pagination` — offset-based, linki `?page=N`, `rel=prev/next`, wyświetla `X artykułów · str. Y/Z`.
+
+### Hooki współdzielone (`src/lib/hooks/`)
+- **`useScrollY()`** — `useSyncExternalStore`-based shared subscription do `window.scroll`. Jeden globalny listener, N subskrybentów. SSR-safe (zwraca `0` na serwerze). Używany przez `ReadingProgress` i `ScrollToTop` — obie przedtem miały własne osobne listenery.
 
 ---
 
@@ -529,7 +554,7 @@ Wszystko przez `jsonLdScript()` — escape `<`, `>`, `&`, U+2028, U+2029 (nie da
 
 ### Semantyka / a11y
 - **Heading anchors** zachowują polskie diakrytyki (`ą→a`, `ł→l`, …) przez `slugifyHeading()` — spójnie w renderze i TOC
-- **Pagination** z `rel=prev/next` na `/category/[slug]`
+- **Pagination** z `rel=prev/next` na `/kategoria/[slug]`
 - **Slugi artykułów** czytelne po polsku (retry `-2`, `-3`, …); timestamp doklejany tylko przy wyczerpaniu próbek
 - **Hierarchia nagłówków** — sr-only `<h1>` na home, eksplicytne `<h1>` na article/category/tag/about/privacy/search/404. Cards: `<h3>` (default), `<h2>` (featured), `<h4>` (compact)
 - **`aria-current="page"`** na aktywnych linkach nawigacji (Header, Mobile drawer, CategoryBar) zamiast role="tab" (które wymagało nie-istniejących tabpanels)
@@ -579,6 +604,7 @@ Matcher wyklucza `_next/static`, `_next/image` oraz statyczne zasoby metadata (f
 - **Lazy Supabase client** — import `data.ts` nie wymaga połączenia
 - **Bounded queries** — `getArticlesByCategory` 50, `getArticlesByTag` 50, `getArticlesGroupedByCategory` `max(N × limit × 10, 200)`
 - **RPC `popular_tags`** — `GROUP BY` w PostgreSQL zamiast pobierania całej junction table
+- **Wspólny `useScrollY()`** — jeden globalny `window.scroll` listener dla wszystkich komponentów (ReadingProgress + ScrollToTop). Przedtem dwa osobne subscriptions
 - **`@vercel/analytics` + GA** — real user metrics
 - **Turbopack** — dev i production build
 
@@ -674,36 +700,33 @@ Zwraca `{message, generated[], rejected[], failed[{title,reason}], scraped, new}
 
 1. **`NEXT_PUBLIC_SITE_URL = https://www.aifeed.pl`** w Vercel (All Environments). Bez tego `<link rel="canonical">` wskazuje na non-www, podczas gdy ruch idzie na www — Google widzi rozbieżność.
 2. **Wygenerować nowy `OPENROUTER_API_KEY`** — aktualny zwraca 401 "User not found" w pipeline (potwierdzone próbnym triggerem). Podmienić w `.env.local` **oraz** Vercel Project Settings → Environment Variables.
-3. **Zaaplikować aktualne `supabase/schema.sql`** w Supabase SQL Editor — żeby RPC `popular_tags` i tabela `newsletter_subscribers` były w produkcji (obecnie `getPopularTags` spada do in-memory fallback, co widać w logach buildu).
+3. **Zaaplikować `supabase/migrations/001_newsletter_and_popular_tags.sql`** w Supabase SQL Editor.
+   - Plik migracji jest gotowy i idempotentny (`CREATE IF NOT EXISTS` / `CREATE OR REPLACE`).
+   - **Krok po kroku:** dashboard → SQL Editor → New query → wklej zawartość pliku → Run.
+   - Po wdrożeniu log `[data] getPopularTags RPC missing…` zniknie z buildu, a newsletter POST przestanie się psuć na świeżej instalacji DB.
+   - Szybki smoke test w SQL Editor: `SELECT * FROM popular_tags(10);` (pusty wynik gdy brak `article_tags` — też OK).
 4. **Rotacja kluczy** — `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` (standardowa higiena po współdzieleniu podczas developmentu).
 5. **Usunąć martwy projekt Vercel** `aifeed` (nie `aifeed-pl`) z dashboardu.
 
 ### 🏗️ Duże prace (code, wymagają zaplanowania)
 
-6. **Polonizacja URL-i** — `/artykul/[slug]`, `/kategoria/[slug]`, `/szukaj`, `/o-serwisie`, `/polityka-prywatnosci`. Największy pojedynczy SEO-boost na polski rynek, ale:
-   - rename katalogów w `src/app/`
-   - search&replace ~50 miejsc `<Link href="/article/...">` → `/artykul/...`
-   - update `sitemap.ts`, `feed.xml`, JSON-LD, `robots.ts`
-   - **301 redirecty** z starych tras w `next.config.ts` (`redirects()`)
-   - test manualny i preview deploy przed merge
-7. **Rate limit multi-region** — przejście z in-memory `Map` na Upstash Redis przez Vercel Marketplace (`@upstash/ratelimit`). Obecnie ogranicza tylko per-instance; multi-instance deployment obchodzi limit.
-8. **Content-Security-Policy header** — wymaga inventory zewnętrznych domen (GA, Vercel Analytics, Supabase, OpenRouter, obrazy scrape'owane z 20+ domen) + nonce dla inline script motywu. Nietrywialne — trzeba testować pod `report-only` zanim enforced.
-9. **Testy integracyjne i E2E:**
+6. **Rate limit multi-region** — przejście z in-memory `Map` na Upstash Redis przez Vercel Marketplace (`@upstash/ratelimit`). Obecnie ogranicza tylko per-instance; multi-instance deployment obchodzi limit.
+7. **Content-Security-Policy header** — wymaga inventory zewnętrznych domen (GA, Vercel Analytics, Supabase, OpenRouter, obrazy scrape'owane z 20+ domen) + nonce dla inline script motywu. Nietrywialne — trzeba testować pod `report-only` zanim enforced.
+8. **Testy integracyjne i E2E:**
    - unit: `parser.ts`, `writer.ts::extractMeta`, `quality.ts`, `content.ts` (z mock fetch), `generator.ts::scrapeOgImage`
    - API routes z mock Supabase
-   - E2E (Playwright) — home, search, article, newsletter, pagination
+   - E2E (Playwright) — home, `/szukaj`, `/artykul/[slug]`, newsletter, pagination, **stare URL-e → 301 redirect**
 
 ### 🔧 Polish / drobne
 
-10. **Quality gate kalibracja** — score 40-60 jako "soft warnings" (zachowaj z flagą), score < 40 = hard reject. Obecny próg 50 bywa surowy dla krótkich ale dobrych artykułów.
-11. **`siteConfig.links` placeholdery** — `twitter: "https://twitter.com/aifeed"`, `github: "https://github.com/aifeed"` idą do `sameAs` w JSON-LD Organization. Jeśli konta nie istnieją, struktura jest formalnie nieprawidłowa. Decyzja: założyć konta albo usunąć `sameAs`.
-12. **`vercel.ts` zamiast `vercel.json`** — TypeScript config z `@vercel/config` (rekomendowane od 2026). Opcjonalne — JSON nadal działa.
-13. **Polskie źródła RSS** — Spider's Web / AntyWeb mają dużo szumu tech-general, filtr AI mitiguje ale można poszukać feedów dedykowanych AI/ML w PL.
-14. **Ujednolicone error handling w `data.ts`** — wspólny helper `handleQuery<T>(result, fallback)` zamiast `if (error) { console.error; return ... }` w każdej funkcji.
-15. **Scalenie scroll listenerów** — `ReadingProgress` i `ScrollToTop` subskrybują osobne `scroll` eventy; można scalić przez wspólny hook.
-16. **Per-source RSS cap** — obecnie `slice(0, 10)` na każdym feedzie, bez priorytetyzacji "jeszcze nie widziane". TechCrunch w godzinach szczytu gubi itemy między triggerami.
-17. **`@vercel/speed-insights`** — `@vercel/analytics` jest, Speed Insights osobno (Core Web Vitals z RUM).
-18. **GA ID hardcoded** — `G-5SD17PTF0C` wstawiony bezpośrednio w `layout.tsx`. Przenieść do `NEXT_PUBLIC_GA_ID` dla elastyczności między środowiskami.
+9. **Quality gate kalibracja** — score 40-60 jako "soft warnings" (zachowaj z flagą), score < 40 = hard reject. Obecny próg 50 bywa surowy dla krótkich ale dobrych artykułów.
+10. **`siteConfig.links` placeholdery** — `twitter: "https://twitter.com/aifeed"`, `github: "https://github.com/aifeed"` idą do `sameAs` w JSON-LD Organization. Jeśli konta nie istnieją, struktura jest formalnie nieprawidłowa. Decyzja: założyć konta albo usunąć `sameAs`.
+11. **`vercel.ts` zamiast `vercel.json`** — TypeScript config z `@vercel/config` (rekomendowane od 2026). Opcjonalne — JSON nadal działa.
+12. **Polskie źródła RSS** — Spider's Web / AntyWeb mają dużo szumu tech-general, filtr AI mitiguje ale można poszukać feedów dedykowanych AI/ML w PL.
+13. **Ujednolicone error handling w `data.ts`** — wspólny helper `handleQuery<T>(result, fallback)` zamiast `if (error) { console.error; return ... }` w każdej funkcji.
+14. **Per-source RSS cap** — obecnie `slice(0, 10)` na każdym feedzie, bez priorytetyzacji "jeszcze nie widziane". TechCrunch w godzinach szczytu gubi itemy między triggerami.
+15. **`@vercel/speed-insights`** — `@vercel/analytics` jest, Speed Insights osobno (Core Web Vitals z RUM).
+16. **GA ID hardcoded** — `G-5SD17PTF0C` wstawiony bezpośrednio w `layout.tsx`. Przenieść do `NEXT_PUBLIC_GA_ID` dla elastyczności między środowiskami.
 
 ---
 

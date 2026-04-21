@@ -125,7 +125,7 @@ export function Header() {
                     Wszystko
                   </Link>
                   {siteConfig.categories.map((cat) => {
-                    const href = `/category/${cat.slug}`;
+                    const href = `/kategoria/${cat.slug}`;
                     const active = pathname === href;
                     return (
                       <Link

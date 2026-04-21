@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: `${category.name} — AiFeed`,
       description,
       type: "website",
-      url: `${siteConfig.url}/category/${category.slug}`,
+      url: `${siteConfig.url}/kategoria/${category.slug}`,
       siteName: siteConfig.name,
       locale: "pl_PL",
       images: [{ url: siteConfig.ogImage, width: 1200, height: 630, alt: siteConfig.name }],
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
     },
     alternates: {
-      canonical: `/category/${category.slug}`,
+      canonical: `/kategoria/${category.slug}`,
     },
   };
 }
@@ -75,7 +75,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     itemListElement: articles.map((article, i) => ({
       "@type": "ListItem",
       position: i + 1,
-      url: `${siteConfig.url}/article/${article.slug}`,
+      url: `${siteConfig.url}/artykul/${article.slug}`,
       name: article.title,
     })),
   } : null;
@@ -125,7 +125,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             </div>
 
             <Pagination
-              basePath={`/category/${slug}`}
+              basePath={`/kategoria/${slug}`}
               page={page}
               totalPages={totalPages}
               total={total}

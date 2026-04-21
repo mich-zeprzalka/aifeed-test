@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
       // Disallow API routes, admin area, and search query pages. Search is
       // noindex'd in page-level metadata too, but the Disallow keeps crawlers
       // from even attempting arbitrary `?q=...` permutations.
-      disallow: ["/api/", "/admin/", "/search"],
+      disallow: ["/api/", "/admin/", "/szukaj"],
     },
     sitemap: `${siteConfig.url}/sitemap.xml`,
   };

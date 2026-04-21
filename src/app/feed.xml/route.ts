@@ -34,7 +34,7 @@ export async function GET() {
 
   const items = articles
     .map((a) => {
-      const articleUrl = escapeXml(`${baseUrl}/article/${a.slug}`);
+      const articleUrl = escapeXml(`${baseUrl}/artykul/${a.slug}`);
       const pubDate = a.published_at ? new Date(a.published_at).toUTCString() : "";
       const categoryTag = a.category
         ? `\n    <category>${escapeXml(a.category.name)}</category>`

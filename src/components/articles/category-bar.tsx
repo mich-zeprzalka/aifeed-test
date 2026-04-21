@@ -13,7 +13,7 @@ const SCROLL_STORAGE_KEY = "aifeed:category-bar-scroll";
 
 export function CategoryBar({ categories }: CategoryBarProps) {
   const pathname = usePathname();
-  const activeSlug = pathname.startsWith("/category/")
+  const activeSlug = pathname.startsWith("/kategoria/")
     ? pathname.split("/")[2]
     : undefined;
   const isHome = pathname === "/";
@@ -72,7 +72,7 @@ export function CategoryBar({ categories }: CategoryBarProps) {
             return (
               <Link
                 key={cat.slug}
-                href={`/category/${cat.slug}`}
+                href={`/kategoria/${cat.slug}`}
                 aria-current={isActive ? "page" : undefined}
                 className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   isActive

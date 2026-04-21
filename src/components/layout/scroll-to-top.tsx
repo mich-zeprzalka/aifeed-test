@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, useCallback } from "react";
+import { useEffect, useLayoutEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { ArrowUp } from "lucide-react";
+import { useScrollY } from "@/lib/hooks/use-scroll-y";
 
 // useLayoutEffect warns on the server; swap to useEffect during SSR.
 const useIsoLayoutEffect =
@@ -10,7 +11,8 @@ const useIsoLayoutEffect =
 
 export function ScrollToTop() {
   const pathname = usePathname();
-  const [visible, setVisible] = useState(false);
+  const scrollY = useScrollY();
+  const visible = scrollY > 400;
 
   // Reset scroll SYNCHRONOUSLY before paint on route change so the user never
   // sees the previous page's scroll position applied to the new page. Running
@@ -25,16 +27,6 @@ export function ScrollToTop() {
     // the navigation failed.
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, [pathname]);
-
-  // Show/hide floating button based on scroll position.
-  useEffect(() => {
-    const handleScroll = () => {
-      setVisible(window.scrollY > 400);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });

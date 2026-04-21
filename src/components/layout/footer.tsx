@@ -28,7 +28,7 @@ export function Footer() {
               {siteConfig.categories.map((cat) => (
                 <li key={cat.slug}>
                   <Link
-                    href={`/category/${cat.slug}`}
+                    href={`/kategoria/${cat.slug}`}
                     className="text-sm text-foreground/70 hover:text-foreground transition-colors"
                   >
                     {cat.name}
@@ -45,7 +45,7 @@ export function Footer() {
             </h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/about" className="text-sm text-foreground/70 hover:text-foreground transition-colors">
+                <Link href="/o-serwisie" className="text-sm text-foreground/70 hover:text-foreground transition-colors">
                   O nas
                 </Link>
               </li>
@@ -59,7 +59,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/privacy"
+                  href="/polityka-prywatnosci"
                   className="text-sm text-foreground/70 hover:text-foreground transition-colors"
                 >
                   Polityka Prywatności

@@ -4,7 +4,7 @@ export const metadata: Metadata = {
   title: "Wyszukiwarka",
   description: "Przeszukaj artykuły AiFeed — wiadomości AI, modele, badania, raporty.",
   alternates: {
-    canonical: "/search",
+    canonical: "/szukaj",
   },
   // Search result pages have thin, query-dependent content. We let the
   // canonical page stay discoverable but tell crawlers not to index the

@@ -18,7 +18,7 @@ export function ArticleCard({ article, variant = "default", className = "" }: Ar
 function FeaturedCard({ article, className }: { article: ArticleCardProps["article"]; className: string }) {
   return (
     <Link
-      href={`/article/${article.slug}`}
+      href={`/artykul/${article.slug}`}
       className={`group relative flex flex-col h-full w-full overflow-hidden rounded-xl bg-card card-hover ${className}`}
     >
       <div className="absolute inset-0 overflow-hidden">
@@ -64,7 +64,7 @@ function FeaturedCard({ article, className }: { article: ArticleCardProps["artic
 function DefaultCard({ article, className }: { article: ArticleCardProps["article"]; className: string }) {
   return (
     <Link
-      href={`/article/${article.slug}`}
+      href={`/artykul/${article.slug}`}
       className={`group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card card-hover ${className}`}
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
@@ -108,7 +108,7 @@ function DefaultCard({ article, className }: { article: ArticleCardProps["articl
 function CompactCard({ article, className }: { article: ArticleCardProps["article"]; className: string }) {
   return (
     <Link
-      href={`/article/${article.slug}`}
+      href={`/artykul/${article.slug}`}
       className={`group flex gap-4 rounded-lg border border-transparent p-2 transition-colors hover:bg-muted/40 hover:border-border/30 ${className}`}
     >
       <div className="relative size-24 shrink-0 overflow-hidden rounded-lg bg-muted">

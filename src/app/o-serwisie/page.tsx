@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description:
     "AiFeed to w pełni zautomatyzowany serwis informacyjny o sztucznej inteligencji. Dowiedz się, jak działa nasz pipeline i jakie technologie napędzają serwis.",
   alternates: {
-    canonical: "/about",
+    canonical: "/o-serwisie",
   },
 };
 

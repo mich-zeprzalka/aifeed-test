@@ -65,7 +65,7 @@ export default async function TagPage({ params }: PageProps) {
       itemListElement: articles.slice(0, 20).map((article, i) => ({
         "@type": "ListItem",
         position: i + 1,
-        url: `${siteConfig.url}/article/${article.slug}`,
+        url: `${siteConfig.url}/artykul/${article.slug}`,
         name: article.title,
       })),
     },

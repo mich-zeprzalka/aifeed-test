@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: article.title,
       description: article.excerpt,
       type: "article",
-      url: `${siteConfig.url}/article/${article.slug}`,
+      url: `${siteConfig.url}/artykul/${article.slug}`,
       siteName: siteConfig.name,
       locale: "pl_PL",
       publishedTime: article.published_at || undefined,
@@ -69,7 +69,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images: [ogImage.url],
     },
     alternates: {
-      canonical: `/article/${article.slug}`,
+      canonical: `/artykul/${article.slug}`,
     },
   };
 }
@@ -97,12 +97,12 @@ export default async function ArticlePage({ params }: PageProps) {
       })
     : null;
 
-  const articleUrl = `${siteConfig.url}/article/${article.slug}`;
+  const articleUrl = `${siteConfig.url}/artykul/${article.slug}`;
 
   const breadcrumbItems = [
     { label: "Strona główna", href: "/" },
     ...(article.category
-      ? [{ label: article.category.name, href: `/category/${article.category.slug}` }]
+      ? [{ label: article.category.name, href: `/kategoria/${article.category.slug}` }]
       : []),
     { label: article.title },
   ];
@@ -303,7 +303,7 @@ export default async function ArticlePage({ params }: PageProps) {
             <div className="flex items-stretch gap-3 border-t border-border/40 pt-6">
               {adjacent.prev ? (
                 <Link
-                  href={`/article/${adjacent.prev.slug}`}
+                  href={`/artykul/${adjacent.prev.slug}`}
                   className="group flex-1 flex items-start gap-2.5 rounded-lg border border-border/40 p-3 transition-all hover:border-primary/30 hover:bg-muted/20"
                 >
                   <ChevronLeft className="size-3.5 shrink-0 mt-0.5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -317,7 +317,7 @@ export default async function ArticlePage({ params }: PageProps) {
               ) : <div className="flex-1" />}
               {adjacent.next ? (
                 <Link
-                  href={`/article/${adjacent.next.slug}`}
+                  href={`/artykul/${adjacent.next.slug}`}
                   className="group flex-1 flex items-start gap-2.5 rounded-lg border border-border/40 p-3 transition-all hover:border-primary/30 hover:bg-muted/20 text-right"
                 >
                   <div className="min-w-0 flex-1">

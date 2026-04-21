@@ -126,7 +126,7 @@ export default async function HomePage() {
                   {cat.name}
                 </h2>
                 <Link
-                  href={`/category/${cat.slug}`}
+                  href={`/kategoria/${cat.slug}`}
                   className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Wszystkie <ArrowRight className="size-3" />
@@ -151,7 +151,7 @@ export default async function HomePage() {
                   {cat.articles.slice(0, 4).map((article) => (
                     <Link
                       key={article.id}
-                      href={`/article/${article.slug}`}
+                      href={`/artykul/${article.slug}`}
                       className="group flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card card-hover"
                     >
                       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
@@ -272,7 +272,7 @@ export default async function HomePage() {
             description: siteConfig.description,
             potentialAction: {
               "@type": "SearchAction",
-              target: `${siteConfig.url}/search?q={search_term_string}`,
+              target: `${siteConfig.url}/szukaj?q={search_term_string}`,
               "query-input": "required name=search_term_string",
             },
           }),

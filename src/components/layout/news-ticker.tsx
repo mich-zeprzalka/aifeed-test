@@ -109,7 +109,7 @@ function NewsTickerImpl({ items }: NewsTickerProps) {
             {items.map((item, i) => (
               <span key={i} className="contents">
                 <Link
-                  href={`/article/${item.slug}`}
+                  href={`/artykul/${item.slug}`}
                   className="shrink-0 py-1.5 text-xs text-background/70 hover:text-background transition-colors"
                   tabIndex={copy === 1 ? -1 : undefined}
                 >
