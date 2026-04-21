@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { Header } from "@/components/layout/header";
 import { NewsTicker } from "@/components/layout/news-ticker";
 import { Footer } from "@/components/layout/footer";
@@ -104,6 +105,7 @@ export default async function RootLayout({
         <Header />
         <main id="main-content" className="flex-1">{children}</main>
         <Footer />
+        <Analytics />
       </body>
     </html>
   );
