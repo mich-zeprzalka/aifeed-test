@@ -522,7 +522,7 @@ Button, Card, Dialog, Sheet, Input, InputGroup, Textarea, Badge, Avatar, Breadcr
 ### Czego brakuje / co jest zepsute
 - 🔴 **Canonical URL mismatch www vs non-www** — `siteConfig.url = https://aifeed.pl`, ale serwis hostowany na `www.aifeed.pl` z redirectem `aifeed.pl → www.aifeed.pl`. Sitemap i canonicals wskazują na non-www, ale Google trafia na www. Solution: `NEXT_PUBLIC_SITE_URL=https://www.aifeed.pl` w env + redirect www zachowany (§18.3)
 - 🔴 **Angielskie route'y** dla polskiej strony (§18.14)
-- 🟡 **Brak hreflang** — jeśli kiedykolwiek będzie wersja EN
+
 - 🟡 **Brak `manifest.webmanifest` linku w metadata** — jest `manifest.ts` ale nie powiązany explicite (Next auto-robi, ale warto zweryfikować)
 - 🟡 **JSON-LD dla tag page** zwraca pusty jeśli brak artykułów — dobra praktyka, ale można dodać CollectionPage dla wszystkich
 - 🟡 Brak `author` w `NewsArticle` JSON-LD (jest `Organization` zamiast `Person` — akceptowalne dla newsroomów)
