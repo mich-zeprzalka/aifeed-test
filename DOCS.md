@@ -1,8 +1,7 @@
 # AiFeed — Dokumentacja Projektu
 
-> Stan na: **2026-04-21** (po rundzie napraw)
+> Stan na: **2026-04-21**
 > Wersja: 0.1.0
-> Autor analizy: Claude Opus 4.7
 
 ---
 
@@ -13,20 +12,19 @@
 3. [Stack technologiczny](#3-stack-technologiczny)
 4. [Struktura repozytorium](#4-struktura-repozytorium)
 5. [Baza danych (Supabase)](#5-baza-danych-supabase)
-6. [Pipeline AI (scraping → generacja → publikacja)](#6-pipeline-ai)
-7. [Warstwa danych `src/lib/data.ts`](#7-warstwa-danych)
+6. [Pipeline AI](#6-pipeline-ai)
+7. [Warstwa danych](#7-warstwa-danych)
 8. [API endpoints](#8-api-endpoints)
 9. [Routing i strony](#9-routing-i-strony)
 10. [System komponentów](#10-system-komponentów)
 11. [Design system i style](#11-design-system-i-style)
-12. [SEO — co jest, czego nie ma](#12-seo)
+12. [SEO](#12-seo)
 13. [Bezpieczeństwo](#13-bezpieczeństwo)
 14. [Wydajność](#14-wydajność)
 15. [Testy](#15-testy)
 16. [Konfiguracja i środowisko](#16-konfiguracja-i-środowisko)
 17. [Wdrożenie i deployment](#17-wdrożenie-i-deployment)
-18. [✅ Zrealizowane poprawki (ta rewizja)](#18-zrealizowane-poprawki)
-19. [🎯 Pozostały backlog](#19-pozostały-backlog)
+18. [🎯 Do zrobienia](#18-do-zrobienia)
 
 ---
 
@@ -34,63 +32,64 @@
 
 **AiFeed** to polskojęzyczny, w pełni zautomatyzowany magazyn informacyjny o AI. Serwis sam:
 
-1. **Scrape'uje** 20 źródeł RSS (TechCrunch AI, The Verge AI, Ars Technica, VentureBeat AI, MIT TR, Wired AI, The Decoder, AI News, OpenAI, Google AI, DeepMind, Microsoft AI, NVIDIA, Hugging Face, Anthropic, arXiv, Spider's Web, AntyWeb, Niebezpiecznik, Hacker News AI)
+1. **Scrape'uje** 20 źródeł RSS (branżowe magazyny, blogi firm AI, arXiv, polskie portale tech)
 2. **Selekcjonuje** najlepsze artykuły przez scoring (świeżość + dywersyfikacja źródeł)
-3. **Pobiera pełną treść** ze strony źródłowej (scraping HTML, z walidacją hosta — no-SSRF)
+3. **Pobiera pełną treść** ze strony źródłowej (scraping HTML z walidacją hosta anti-SSRF)
 4. **Generuje** po polsku kompletny artykuł przez OpenRouter (Claude Sonnet 4)
-5. **Ocenia jakość** (quality gate, score 0-100, próg 50)
+5. **Ocenia jakość** (quality gate 0-100, próg 50)
 6. **Dobiera miniaturkę** — najpierw `og:image` ze źródła, w razie braku Gemini 2.5 Flash Image
 7. **Zapisuje** do Supabase z tagami, kategorią, linkami zwrotnymi
 8. **Publikuje** natychmiast — brak ingerencji człowieka
 
-Pipeline leci w Vercel Cron 3× dziennie (5:00, 11:00, 17:00 UTC).
+Pipeline leci w Vercel Cron 3× dziennie (5:00, 11:00, 17:00 UTC — konfiguracja w `vercel.json`).
 
-**Produkcja:** `https://aifeed.pl` i `https://www.aifeed.pl` (aliasy na projekt Vercel `aifeed-pl`)
+**Produkcja:** `https://aifeed.pl` i `https://www.aifeed.pl` (aliasy na projekt Vercel `aifeed-pl`).
 
 ---
 
 ## 2. Architektura
 
-### Diagram przepływu danych
-
 ```
                    ┌───────────────────────┐
-                   │  Vercel Cron (3×/dzień)│
+                   │  Vercel Cron (3×/dzień) │
                    └───────────┬───────────┘
                                ▼
         ┌──────────────────────────────────────────┐
-        │  /api/cron/generate (Node, maxDuration=300) │
+        │  /api/cron/generate  (maxDuration=300s)  │
+        │  Bearer CRON_SECRET (fail-closed)        │
         │  ─────────────────────────────────────── │
-        │  1. scrapeAllFeeds()     (20 źródeł RSS)  │
+        │  1. scrapeAllFeeds()          20 feedów   │
         │  2. dedupe vs scraped_items                │
-        │  3. selectTopArticles()  (greedy scoring)  │
+        │  3. selectTopArticles()    (greedy score) │
         │  4. for each top item:                     │
         │     ├─ scrapeArticleContent() + SSRF guard │
-        │     ├─ generateArticle() → OpenRouter      │
+        │     ├─ generateArticle()  (Claude Sonnet 4)│
         │     ├─ assessArticleQuality() ≥ 50         │
-        │     ├─ getArticleThumbnail() og:image/AI   │
-        │     ├─ buildUniqueSlug() — kolizje retry   │
-        │     ├─ insert into articles                │
+        │     ├─ getArticleThumbnail()  og:image→AI  │
+        │     ├─ buildUniqueSlug()  human-readable   │
+        │     ├─ insert articles                     │
         │     └─ upsert tags + article_tags          │
+        │  returns {generated, rejected, failed}     │
         └──────────────────────────────────────────┘
                                │
                                ▼
         ┌──────────────────────────────────────────┐
-        │  Supabase (PostgreSQL)                    │
+        │  Supabase (PostgreSQL + Storage)          │
         │  articles · categories · tags ·           │
         │  article_tags · scraped_items ·           │
         │  newsletter_subscribers                   │
         │  RPC: popular_tags(tag_limit)             │
+        │  Storage bucket: thumbnails               │
         └──────────────────────────────────────────┘
                                │
                                ▼
         ┌──────────────────────────────────────────┐
-        │  Next.js 16 App Router (RSC + ISR 60s)    │
-        │  /                → home                  │
-        │  /article/[slug]  → single post           │
-        │  /category/[slug] → category list (?page) │
-        │  /tag/[slug]      → tag list              │
-        │  /search          → client search         │
+        │  Next.js 16 App Router (RSC + ISR)        │
+        │  /                    → home              │
+        │  /article/[slug]      → post              │
+        │  /category/[slug]?page=N → category list  │
+        │  /tag/[slug]          → tag list          │
+        │  /search              → client search     │
         │  /about /privacy                          │
         │  /sitemap.xml /robots.txt /feed.xml       │
         └──────────────────────────────────────────┘
@@ -103,44 +102,43 @@ Pipeline leci w Vercel Cron 3× dziennie (5:00, 11:00, 17:00 UTC).
 
 ### Warstwy
 
-- **Edge / Proxy** — security headers w `src/proxy.ts` (Next.js 16 rename z `middleware.ts`)
-- **Server (RSC)** — strony i route handlers, czytanie z Supabase przez anon key
-- **Client components** — wyłącznie interaktywne (`use client`): Header, SearchModal, NewsTicker, ThemeToggle, NewsletterForm, ReadingProgress, TableOfContents, CategoryBar, ShareButtons, ScrollToTop, SearchPage
-- **Admin client** — `createAdminClient()` używa `SUPABASE_SERVICE_ROLE_KEY`, omija RLS, wyłącznie w pipeline i newsletter POST
+- **Edge (proxy)** — `src/proxy.ts`, nagłówki bezpieczeństwa dla wszystkich tras (Next.js 16 konwencja — dawniej `middleware.ts`)
+- **Server (RSC)** — strony i route handlery; dostęp do Supabase przez **anon key** + RLS
+- **Client components** — wyłącznie interaktywne (`"use client"`): Header, SearchModal, NewsTicker, ThemeToggle, NewsletterForm, ReadingProgress, TableOfContents, CategoryBar, ShareButtons, ScrollToTop, SearchPage
+- **Admin client** — `createAdminClient()` (service role) omija RLS; używany wyłącznie w pipeline (`/api/cron/*`) i zapisie do `newsletter_subscribers`
 
 ---
 
 ## 3. Stack technologiczny
 
 ### Core
-- **Next.js 16.2.3** (App Router, React Compiler włączony: `reactCompiler: true`, `proxy.ts` zamiast `middleware.ts`)
+- **Next.js 16.2.3** (App Router, React Compiler, Turbopack, `proxy.ts` zamiast `middleware.ts`)
 - **React 19.2.4** (RSC + `useSyncExternalStore`, `useMemo`, `useCallback`)
-- **TypeScript 5** (strict mode)
-- **Node 24.x** (Vercel runtime)
+- **TypeScript 5** — strict mode
+- **Node 24.x** — Vercel runtime
 
 ### Dane
 - **Supabase** (`@supabase/supabase-js` 2.103 + `@supabase/ssr` 0.10)
-- **PostgreSQL** — tabele `articles`, `categories`, `tags`, `article_tags`, `scraped_items`, `newsletter_subscribers`; RPC `popular_tags`
+- **PostgreSQL** — tabele `articles`, `categories`, `tags`, `article_tags`, `scraped_items`, `newsletter_subscribers`
+- **Supabase RPC** — `popular_tags(tag_limit)` (server-side GROUP BY)
 - **Supabase Storage** — bucket `thumbnails` dla AI-generowanych obrazów
 
 ### AI
-- **OpenRouter** — `anthropic/claude-sonnet-4` (pisanie artykułów) + `google/gemini-2.5-flash-image` (miniaturki)
+- **OpenRouter** — `anthropic/claude-sonnet-4` (artykuły) + `google/gemini-2.5-flash-image` (miniaturki)
 
 ### UI
-- **shadcn/ui 4.2** (na `@base-ui/react` 1.3 — **UWAGA:** to NIE jest klasyczne Radix!)
-- **Tailwind CSS 4** (nowa składnia `@utility`, `@theme`, `@custom-variant`, bez `tailwind.config.js`)
-- **lucide-react** ikony
-- **next-themes** 0.4
+- **shadcn/ui 4.2** zbudowany na `@base-ui/react` 1.3 (**nie** klasyczne Radix)
+- **Tailwind CSS 4** — nowa składnia (`@theme`, `@custom-variant`, `@utility`), bez `tailwind.config.js`
+- **lucide-react** — ikony
+- **next-themes** — motyw jasny/ciemny
 - **tw-animate-css** — animacje
-- **@vercel/analytics** — real user metrics (GA + Vercel Analytics obie instrumentacje)
-- **@next/third-parties** — Google Analytics (G-5SD17PTF0C)
+- **react-markdown 10** + `remark-gfm 4` — renderowanie treści
+
+### Observability
+- **@vercel/analytics** + **@next/third-parties** (Google Analytics, gaId `G-5SD17PTF0C`)
 
 ### Testing
 - **Vitest 4** + `@testing-library/react` 16 + `jsdom` 29 — **28 testów passing**
-
-### Deployment
-- **Vercel** — projekt `aifeed-pl` w team `m-zeprzalkas-projects`
-- **Cron** skonfigurowany w `vercel.json` (3×/dzień)
 
 ---
 
@@ -148,100 +146,104 @@ Pipeline leci w Vercel Cron 3× dziennie (5:00, 11:00, 17:00 UTC).
 
 ```
 aifeed/
-├── .vercel/project.json          # powiązanie z projektem aifeed-pl
-├── vercel.json                   # cron jobs
-├── next.config.ts                # image remotePatterns, reactCompiler
+├── .vercel/project.json
+├── vercel.json                   # cron 3×/dzień
+├── next.config.ts                # reactCompiler + image remotePatterns
 ├── tsconfig.json
 ├── vitest.config.ts
 ├── postcss.config.mjs
 ├── components.json               # shadcn/ui config
 ├── eslint.config.mjs
-├── AGENTS.md                     # instrukcje dla AI asystentów
-├── CLAUDE.md                     # -> AGENTS.md
+├── .env.example                  # wszystkie wymagane zmienne z komentarzami
+├── AGENTS.md + CLAUDE.md         # instrukcje dla AI asystentów
 │
 ├── docs/
-│   └── examples/                 # 5 statycznych mockupów HTML (wyjęte z src/app)
+│   └── examples/                 # 5 mockupów HTML (poza App Router)
 │
 ├── supabase/
-│   └── schema.sql                # tabele + RLS + RPC popular_tags + seed kategorii
+│   └── schema.sql                # tabele + RLS + RPC + seed kategorii
 │
-├── src/
-│   ├── proxy.ts                  # security headers (rename z middleware.ts)
-│   │
-│   ├── app/
-│   │   ├── layout.tsx            # root layout (Header, NewsTicker, Footer, JSON-LD, Analytics)
-│   │   ├── globals.css           # Tailwind 4 @theme + prose-article + animacje
-│   │   ├── manifest.ts           # PWA manifest (lang: pl)
-│   │   ├── robots.ts             # robots.txt
-│   │   ├── sitemap.ts            # sitemap.xml (articles + categories + tags)
-│   │   ├── not-found.tsx         # 404
-│   │   ├── feed.xml/route.ts     # RSS feed
-│   │   │
-│   │   ├── (home)/page.tsx       # strona główna
-│   │   ├── about/page.tsx        # o serwisie
-│   │   ├── privacy/page.tsx      # polityka prywatności
-│   │   ├── search/page.tsx       # wyszukiwarka (client)
-│   │   │
-│   │   ├── article/[slug]/
-│   │   │   ├── page.tsx          # single post (breadcrumbs, TOC, prose, share, related)
-│   │   │   ├── loading.tsx       # skeleton
-│   │   │   └── error.tsx         # error boundary
-│   │   │
-│   │   ├── category/[slug]/
-│   │   │   ├── page.tsx          # lista kategorii z paginacją ?page=N (offset-based)
-│   │   │   └── loading.tsx
-│   │   │
-│   │   ├── tag/[slug]/page.tsx   # lista tag
-│   │   │
-│   │   └── api/
-│   │       ├── cron/
-│   │       │   ├── generate/route.ts  # główny pipeline
-│   │       │   └── seed/route.ts      # manualny seed
-│   │       ├── newsletter/route.ts    # zapis maila
-│   │       └── search/route.ts        # wyszukiwarka (max 100 znaków)
-│   │
-│   ├── components/
-│   │   ├── layout/               # Header, Footer, NewsTicker, NewsletterForm,
-│   │   │                         # ScrollToTop, SearchModal, ThemeToggle
-│   │   ├── articles/             # ArticleCard, Breadcrumbs, CategoryBar,
-│   │   │                         # ReadingProgress, ShareButtons, TableOfContents
-│   │   └── ui/                   # shadcn: Button, Card, Dialog, Sheet, Input,
-│   │                             # Pagination, Skeleton, ScrollArea, EmptyState...
-│   │
-│   ├── config/
-│   │   ├── site.ts               # siteConfig (URL, kategorie)
-│   │   └── site.test.ts
-│   │
-│   ├── lib/
-│   │   ├── data.ts               # wszystkie read-only query do Supabase (lazy client)
-│   │   ├── data.test.ts          # testy — importują rzeczywisty kod
-│   │   ├── search-utils.ts       # escapeIlike, sanitizeOrQuery, pluralize, MAX_LEN
-│   │   ├── heading-id.ts         # slugifyHeading — diakrytyka-aware
-│   │   ├── jsonld.ts             # jsonLdScript — escape </script>
-│   │   ├── rate-limit.ts         # in-memory sliding window
-│   │   ├── rate-limit.test.ts
-│   │   ├── utils.ts              # cn()
-│   │   │
-│   │   ├── ai/
-│   │   │   ├── prompts.ts        # ARTICLE_SYSTEM_PROMPT + USER_PROMPT
-│   │   │   ├── writer.ts         # generateArticle() — OpenRouter + META parser
-│   │   │   └── quality.ts        # assessArticleQuality() — score 0-100
-│   │   │
-│   │   ├── scraper/
-│   │   │   ├── sources.ts        # RSS_SOURCES (20 feedów)
-│   │   │   ├── parser.ts         # scrapeAllFeeds + selectTopArticles
-│   │   │   └── content.ts        # scrapeArticleContent + SSRF host allowlist
-│   │   │
-│   │   ├── images/
-│   │   │   └── generator.ts      # og:image scrape → AI fallback → Storage
-│   │   │
-│   │   └── supabase/
-│   │       └── admin.ts          # createAdminClient (service role)
-│   │
-│   ├── test/setup.ts             # @testing-library/jest-dom
-│   └── types/database.ts         # TS types dla tabel
+├── public/                       # favicon, icons, og-image
 │
-└── public/                       # favicon, icons, og-image
+└── src/
+    ├── proxy.ts                  # security headers (X-Frame, HSTS, ...)
+    │
+    ├── app/
+    │   ├── layout.tsx            # Header + NewsTicker + Footer + JSON-LD + Analytics
+    │   ├── globals.css           # Tailwind 4 @theme + prose-article + animacje
+    │   ├── manifest.ts           # PWA manifest (lang: pl)
+    │   ├── robots.ts
+    │   ├── sitemap.ts
+    │   ├── not-found.tsx
+    │   ├── feed.xml/route.ts     # RSS 2.0 z escape XML
+    │   │
+    │   ├── (home)/
+    │   │   ├── loading.tsx
+    │   │   └── page.tsx          # hero + latest + category highlights + newsletter
+    │   ├── about/page.tsx
+    │   ├── privacy/page.tsx
+    │   ├── search/
+    │   │   ├── loading.tsx
+    │   │   └── page.tsx          # client, debounce 300ms, maxLength 100
+    │   │
+    │   ├── article/[slug]/
+    │   │   ├── page.tsx          # breadcrumbs + TOC + prose + share + adjacent + related
+    │   │   ├── loading.tsx
+    │   │   └── error.tsx
+    │   ├── category/[slug]/
+    │   │   ├── page.tsx          # offset-based pagination ?page=N
+    │   │   └── loading.tsx
+    │   ├── tag/[slug]/
+    │   │   ├── page.tsx
+    │   │   └── loading.tsx
+    │   │
+    │   └── api/
+    │       ├── cron/
+    │       │   ├── generate/route.ts   # pipeline
+    │       │   └── seed/route.ts       # manualny seed kategorii
+    │       ├── newsletter/route.ts     # 5/min/IP, email ≤ 254 znaków
+    │       └── search/route.ts         # 30/min/IP, query ≤ 100 znaków
+    │
+    ├── components/
+    │   ├── layout/   (7 plików)  # Header, Footer, NewsTicker, NewsletterForm,
+    │   │                         #   ScrollToTop, SearchModal, ThemeToggle
+    │   ├── articles/ (6 plików)  # ArticleCard, Breadcrumbs, CategoryBar,
+    │   │                         #   ReadingProgress, ShareButtons, TableOfContents
+    │   └── ui/      (17 plików)  # shadcn: Button, Card, Dialog, Sheet, Input,
+    │                             #   Pagination, Skeleton, ScrollArea, EmptyState, ...
+    │
+    ├── config/
+    │   ├── site.ts               # siteConfig (URL, kategorie, links)
+    │   └── site.test.ts
+    │
+    ├── lib/
+    │   ├── data.ts               # read-only queries (anon key, lazy client)
+    │   ├── data.test.ts          # testy importują rzeczywisty kod z search-utils
+    │   ├── search-utils.ts       # escapeIlike, sanitizeOrQuery, pluralize, MAX_LEN
+    │   ├── heading-id.ts         # slugifyHeading — diakrytyka-aware
+    │   ├── jsonld.ts             # jsonLdScript — escape </script>
+    │   ├── rate-limit.ts         # in-memory sliding window
+    │   ├── rate-limit.test.ts
+    │   ├── utils.ts              # cn()
+    │   │
+    │   ├── ai/
+    │   │   ├── prompts.ts        # ARTICLE_SYSTEM_PROMPT + USER_PROMPT
+    │   │   ├── writer.ts         # generateArticle() + META extractor
+    │   │   └── quality.ts        # assessArticleQuality() — 0-100 + issues[]
+    │   │
+    │   ├── scraper/
+    │   │   ├── sources.ts        # RSS_SOURCES (20 feedów)
+    │   │   ├── parser.ts         # scrapeAllFeeds + selectTopArticles
+    │   │   └── content.ts        # scrapeArticleContent + isInternalHost guard
+    │   │
+    │   ├── images/
+    │   │   └── generator.ts      # og:image → AI → Supabase Storage
+    │   │
+    │   └── supabase/
+    │       └── admin.ts          # createAdminClient (service role)
+    │
+    ├── test/setup.ts             # @testing-library/jest-dom
+    └── types/database.ts         # TS types dla tabel
 ```
 
 ---
@@ -256,27 +258,26 @@ aifeed/
 | `articles` | id, title, slug (UNIQUE), excerpt, content, category_id (FK), thumbnail_url, thumbnail_source, source_urls[], source_titles[], reading_time, is_featured, is_published, published_at | RLS: public read gdzie `is_published = true` |
 | `tags` | id, name (UNIQUE), slug (UNIQUE) | |
 | `article_tags` | article_id, tag_id | composite PK, ON DELETE CASCADE |
-| `scraped_items` | id, source_url (UNIQUE), title, description, source_name, is_processed | Cache dedup do pipeline |
-| `newsletter_subscribers` | id, email (UNIQUE), subscribed_at, unsubscribed_at | Bez public policy — zapis/odczyt wyłącznie service role |
+| `scraped_items` | id, source_url (UNIQUE), title, description, source_name, is_processed | Cache dedup pipeline'u |
+| `newsletter_subscribers` | id, email (UNIQUE), subscribed_at, unsubscribed_at | Zapis/odczyt wyłącznie service role (brak public policy) |
 
 ### Indeksy
-- `idx_articles_slug`, `idx_articles_published(is_published, published_at DESC)`, `idx_articles_category`, `idx_articles_featured(is_featured, published_at DESC)`, `idx_scraped_items_url`
+- `idx_articles_slug`
+- `idx_articles_published (is_published, published_at DESC)`
+- `idx_articles_category`
+- `idx_articles_featured (is_featured, published_at DESC)`
+- `idx_scraped_items_url`
 
 ### RLS policies
 - `articles` — public SELECT gdzie `is_published = true`
 - `categories`, `tags`, `article_tags` — public SELECT (bez filtrów)
-- `scraped_items` — brak policy (admin-only via service role)
-- `newsletter_subscribers` — brak policy (admin-only via service role)
+- `scraped_items`, `newsletter_subscribers` — brak publicznej policy; dostęp wyłącznie przez service role (admin client)
 
 ### RPC
-- `popular_tags(tag_limit INT) → (id, name, slug, count)` — server-side GROUP BY dla Trendów, zastępuje pobieranie całego `article_tags` do aplikacji
+- `popular_tags(tag_limit INT) → (id, name, slug, count)` — server-side `GROUP BY tag_id ORDER BY count DESC`, używany przez `getPopularTags()`
 
 ### Storage
-- Bucket `thumbnails` — tworzony imperatywnie w kodzie (idempotentnie)
-
-### Bieżący stan
-- **172+ artykułów** (stan na 2026-04-21)
-- 6 kategorii (spójne w `site.ts` i seed SQL)
+- Bucket `thumbnails` — public, `fileSizeLimit: 10 MB`, tworzony idempotentnie w `uploadToStorage()` (ignore "already exists")
 
 ---
 
@@ -284,11 +285,10 @@ aifeed/
 
 ### `scrapeAllFeeds()` — `src/lib/scraper/parser.ts`
 
-- Parsuje 20 feedów RSS równolegle (`Promise.allSettled`), zdefiniowanych w `src/lib/scraper/sources.ts`
-- Max 10 itemów per feed
-- **Filtr AI** — whitelist słów kluczowych (`ai`, `llm`, `gpt`, `claude`, `gemini`, `neural`...) lub zawsze-relewantne źródło (OpenAI, Anthropic, arXiv itd.)
-- Deduplikacja po URL
-- Sort: najnowsze pierwsze
+- Parsuje 20 feedów RSS równolegle (`Promise.allSettled`)
+- Max 10 itemów per feed (`rss-parser`, timeout 10s, User-Agent: `AiFeed/1.0`)
+- **Filtr AI-relevance** — whitelist słów kluczowych (`ai`, `llm`, `gpt`, `claude`, `gemini`, `neural`, `deep learning`, `transformer`, `openai`, `anthropic`, `reasoning`, `agentic`, …) lub zawsze-relewantne źródła (Blog firmowy / DeepMind / Hugging Face / Anthropic / arXiv)
+- Deduplikacja po URL, sort najnowsze pierwsze
 
 ### `selectTopArticles(articles, count)` — greedy scoring
 
@@ -298,78 +298,78 @@ freshnessScore = max(0, 100 − hoursOld × 2)
 diversityPenalty = sourceCount[source] × 20
 ```
 
-Wybiera `count` najlepszych, karząc kolejne artykuły z tego samego źródła.
+Iteracyjnie wybiera top-scoring artykuł, karząc kolejne pod tym samym źródłem.
 
 ### `scrapeArticleContent(url)` — `src/lib/scraper/content.ts`
 
-**SSRF hardening — walidacja URL przed fetch:**
-- Parsuje URL przez `new URL(url)` (rzuca → reject)
-- Wymaga protocol `http:` lub `https:`
-- Odrzuca `localhost`, `*.localhost`, `127.0.0.0/8`, `10.0.0.0/8`, `192.168.0.0/16`, `172.16.0.0/12`, `169.254.0.0/16` (link-local / AWS metadata), IPv6 loopback `::1`, IPv6 ULA `fc00::/7`
+**Walidacja URL (anti-SSRF) przed fetch:**
+1. `new URL(url)` (rzuca → odrzuć)
+2. Wymaga `http:` lub `https:`
+3. `isInternalHost()` blokuje: `localhost`/`*.localhost`, `0.0.0.0`, `127.0.0.0/8`, `10.0.0.0/8`, `192.168.0.0/16`, `172.16.0.0/12`, `169.254.0.0/16` (AWS metadata), IPv6 loopback `::1`, IPv6 ULA `fc::/7`, `fd::/7`
 
-Dalej:
-1. Fetch z User-Agent Chrome 120, timeout 15s, follow redirects
-2. Reject non-HTML content-type
-3. Detekcja PDF/binary (`%PDF`, `endobj`, `endstream`)
-4. Strip `<script>`, `<style>`, `<noscript>`, `<nav>`, `<header>`, `<footer>`, `<aside>`, `<form>`, `<svg>`, `<iframe>`, komentarze
-5. Priorytet: `<article>` > `<main>` > `<body>`
-6. HTML → plain text (break, paragraph, heading)
-7. Decode encji
-8. Truncate do 6000 znaków
-9. Odrzuca <100 znaków
-10. Sprawdza ratio znaków drukowalnych (≥70%)
+**Ekstrakcja treści:**
+1. Fetch (User-Agent Chrome 120, timeout 15s, follow redirects)
+2. Wymaga `text/html` lub `application/xhtml` (reject PDF/images/binary)
+3. Strip `<script>`, `<style>`, `<noscript>`, `<nav>`, `<header>`, `<footer>`, `<aside>`, `<form>`, `<svg>`, `<iframe>`, komentarze
+4. Priorytet DOM: `<article>` > `<main>` > `<body>`
+5. HTML → plain text z dekodowaniem encji (`&nbsp;`, `&amp;`, smart quotes, em/en dashes)
+6. Truncate do 6000 znaków
+7. Odrzuca <100 znaków lub gdy ratio `printable/total < 0.7`
 
-### `generateArticle(topic, urls, descriptions, sourceContent)` — `src/lib/ai/writer.ts`
+### `generateArticle()` — `src/lib/ai/writer.ts`
 
 - Model: `anthropic/claude-sonnet-4` via OpenRouter
 - `max_tokens: 4096`, timeout 90s
-- System prompt narzuca wierność źródłu, polski dziennikarski, 600-1200 słów, markdown, obowiązkowa sekcja `## Kluczowe wnioski`
-- Output split: treść + META (JSON) po `---META---`
-- Parser META ma 3 strategie fallback
+- System prompt narzuca: wierność źródłu, polski dziennikarski, 600-1200 słów, obowiązkowa sekcja `## Kluczowe wnioski`, zakaz halucynacji
+- Output split: treść + META (JSON) rozdzielone `---META---`
+- `extractMeta()` ma **3 strategie fallback** dla META JSON:
+  1. Delimiter `---META---` (case-insensitive regex)
+  2. Pattern-match `{..."title"...}` — ostatni JSON blok
+  3. Fix trailing commas + smart quotes → straight
+- Loguje użycie tokenów i koszt z `data.usage`
 
-### `assessArticleQuality(article)` — `src/lib/ai/quality.ts`
-
-Kary za braki (próg odrzucenia: score < 50):
+### `assessArticleQuality()` — `src/lib/ai/quality.ts`
 
 | Check | Kara |
 |---|---|
-| Brak sekcji "Kluczowe wnioski" | −15 |
-| Brak linku markdown | −25 |
+| Brak sekcji `## Kluczowe wnioski` | −15 |
+| Brak linku markdown do źródła | −25 |
 | <100 słów | −35 |
 | 100-199 słów | −20 |
-| Brak `##` nagłówka | −10 |
+| 0× `##` | −10 |
 | Tytuł <15 znaków | −15 |
 | Excerpt <50 znaków | −10 |
 | <2 tagi | −5 |
 | Nieznana kategoria | −10 |
 
+Próg odrzucenia: score < 50.
+
 ### `getArticleThumbnail(title, sourceUrl)` — `src/lib/images/generator.ts`
 
-1. **scrape og:image** ze źródła (FREE)
-2. **AI generation** (Gemini 2.5 Flash Image) jeśli og:image padło; upload base64 do Supabase Storage bucket `thumbnails`
+1. **`scrapeOgImage()`** — scrape `og:image` (oba porządki atrybutów), resolve relative URL, HEAD check (`image/*`, size > 5 KB aby pominąć tracking pixele), wydobycie `og:site_name` dla atrybucji
+2. **`generateAIImage()`** — fallback na Gemini 2.5 Flash Image przez OpenRouter, prompt "professional editorial illustration, 16:9, no text/logos", timeout 90s
+3. **`uploadToStorage()`** — upload base64 (PNG/JPEG/WebP) do bucket `thumbnails`, plik `ai-{timestamp}.{ext}`, zwraca public URL
+4. Wszystkie metody zawiodły → `{ url: "", source: null }` (UI pokazuje gradient placeholder)
 
-Podpis uproszczony — usunięty nieużywany 3-ci parametr `sourceName`.
-
-### Cały pipeline — `/api/cron/generate/route.ts`
+### Cały przepływ — `/api/cron/generate/route.ts`
 
 ```ts
-1.  Bearer ${CRON_SECRET} auth (fail-closed — brak secret = 401)
-2.  scrapedItems = await scrapeAllFeeds()
-3.  existing = supabase.from("scraped_items").in("source_url", urls)
-4.  newItems = scrapedItems.filter(!existing)
-5.  topItems = selectTopArticles(newItems, count)   // count via ?count=N, max 15
+1.  Bearer CRON_SECRET check → 401 jeśli brak/zły secret
+2.  scrapedItems = scrapeAllFeeds()
+3.  existingUrls = SELECT source_url FROM scraped_items WHERE source_url IN (...)
+4.  newItems = scrapedItems.filter(url ∉ existingUrls)
+5.  topItems = selectTopArticles(newItems, count)  // count ∈ [1,15] via ?count=N
 6.  for each item:
-    6a. sourceContent = scrapeArticleContent(item.url)
-    6b. if sourceContent.length < 100 → skip + upsert processed, failed.push("source-too-short")
-    6c. article = generateArticle(...)
-    6d. refusalCheck → failed.push("ai-refusal")
-    6e. quality = assessArticleQuality(article) ≥ 50 → rejected.push(title)
-    6f. thumbnail = getArticleThumbnail(...)
-    6g. slug = buildUniqueSlug(...) — czysty slug, retry z numerem, ostatecznie timestamp
-    6h. find category by slug (maybeSingle)
-    6i. insert article (insertError → failed.push)
-    6j. for each tag: upsert tag + link article_tags
-    6k. upsert scraped_items(is_processed=true)
+    a. sourceContent = scrapeArticleContent(item.url)
+    b. if content < 100 znaków → failed.push("source-too-short"), mark processed
+    c. article = generateArticle(...)
+    d. refusal patterns → failed.push("ai-refusal"), mark processed
+    e. quality.score < 50 → rejected.push(title), mark processed
+    f. thumbnail = getArticleThumbnail(title, url)
+    g. slug = buildUniqueSlug(supabase, title)  // retry z -2, -3…, ostatecznie timestamp
+    h. insert article (is_featured = pierwszy w tej serii)
+    i. upsert tags + article_tags
+    j. upsert scraped_items(is_processed=true)
 7.  return { message, generated[], rejected[], failed[{title,reason}], scraped, new }
 ```
 
@@ -377,44 +377,47 @@ Podpis uproszczony — usunięty nieużywany 3-ci parametr `sourceName`.
 
 ## 7. Warstwa danych
 
-`src/lib/data.ts` — wszystkie zapytania do DB dla frontu (anon key, read-only), **lazy singleton** (`db()` — client konstruowany przy pierwszym wywołaniu).
+`src/lib/data.ts` — wszystkie zapytania read-only do DB dla frontu (anon key + RLS).
+
+**Lazy singleton** — funkcja `db()` konstruuje klienta przy pierwszym wywołaniu; import modułu nie wymaga env vars.
 
 ### Funkcje
-- `getArticles(limit)` — najnowsze opublikowane
-- `getFeaturedArticles()` — `is_featured=true`, max 5
-- `getArticleBySlug(slug)` — `maybeSingle()`
-- `getArticlesByCategory(slug, limit=50)` — bounded (było: bez limitu)
-- `getArticlesByCategoryPaginated(slug, pageSize, page)` — **offset-based (`?page=N`)**, zwraca `{articles, page, totalPages, total, hasPrev, hasNext, pageSize}`
-- `getCategories()`, `getCategoryBySlug(slug)`
-- `searchArticles(query)` — `sanitizeOrQuery` (escape `%_\` + strip `,()` dla PostgREST `.or()`), limit 20
-- `getArticlesGroupedByCategory(slugs, limitPerCategory)` — bounded pull (max 200 lub N×10)
-- `getPopularTags(limit)` — **RPC `popular_tags(tag_limit)`** (server-side GROUP BY), fallback in-memory gdy RPC niedostępny
-- `getSitemapArticles(limit=5000)`
-- `getTickerArticles(limit)`
-- `getTagBySlug`, `getArticlesByTag(slug, limit=50)`, `getAllTags`
-- `getAdjacentArticles(articleId, categoryId, publishedAt)` — `maybeSingle()` zamiast `.single()`
+
+| Funkcja | Uwagi |
+|---|---|
+| `getArticles(limit = 10)` | najnowsze opublikowane |
+| `getFeaturedArticles()` | `is_featured = true`, max 5 |
+| `getArticleBySlug(slug)` | `maybeSingle()` |
+| `getArticlesByCategory(slug, limit = 50)` | bounded limit |
+| `getArticlesByCategoryPaginated(slug, pageSize, page)` | offset-based, zwraca `{articles, page, totalPages, total, pageSize, hasPrev, hasNext}` |
+| `getCategories()`, `getCategoryBySlug(slug)` | `maybeSingle()` |
+| `searchArticles(query)` | `sanitizeOrQuery` + `.or("title.ilike%…,excerpt.ilike%…")`, limit 20 |
+| `getArticlesGroupedByCategory(slugs, limitPerCategory = 4)` | 1 query, bounded pull (`max(N × limit × 10, 200)`), in-memory grouping |
+| `getPopularTags(limit = 10)` | **RPC `popular_tags`** z fallbackiem in-memory aggregate gdy RPC niedostępny |
+| `getSitemapArticles(limit = 5000)` | slug + updated_at + is_featured |
+| `getTickerArticles(limit = 10)` | title + slug |
+| `getTagBySlug`, `getArticlesByTag(slug, limit = 50)`, `getAllTags` | |
+| `getAdjacentArticles(articleId, categoryId, publishedAt)` | prev/next w tej samej kategorii, `maybeSingle()` |
 
 ### Optymalizacje
-- `attachTagsBatch()` — 1 query zamiast N+1
-- RPC `popular_tags` — brak transferu całej tablicy `article_tags`
-- Lazy client — import modułu nie wymaga env vars
-- Wszystkie `single()` → `maybeSingle()` gdzie nie chcemy błędu na 0 rekordów
+- `attachTagsBatch()` — 1 query dla wszystkich tagów (eliminacja N+1)
+- `.maybeSingle()` wszędzie gdzie nie chcemy error na 0 rekordów
+- `sanitizeOrQuery()` — escape `%_\` + strip `,()` (syntax chars PostgREST `.or()`)
 
 ---
 
 ## 8. API endpoints
 
-| Endpoint | Metoda | Auth | Rate limit | Uwagi |
-|---|---|---|---|---|
-| `/api/cron/generate` | GET + POST | Bearer CRON_SECRET (**fail-closed**) | brak | 300s timeout, 1-15 items, używany przez Vercel Cron (GET) |
-| `/api/cron/seed` | POST + GET | Bearer CRON_SECRET (**fail-closed**) | brak | Ręczny seed dla pustego DB; GET zwraca metadata |
-| `/api/newsletter` | POST | brak | 5/min/IP | Upsert do `newsletter_subscribers`; email length ≤ 254 |
-| `/api/search` | GET | brak | 30/min/IP | Wrapper nad `searchArticles()`, query ≤ 100 znaków |
+| Endpoint | Metoda | Auth | Rate limit | Timeout | Uwagi |
+|---|---|---|---|---|---|
+| `/api/cron/generate` | GET, POST | Bearer `CRON_SECRET` (fail-closed) | — | 300s | `?count=N`, N ∈ [1, 15], default 10 |
+| `/api/cron/seed` | GET, POST | Bearer `CRON_SECRET` (fail-closed) | — | 300s | `?category=slug`, `?limit=N`; GET zwraca metadata |
+| `/api/newsletter` | POST | — | 5/min/IP | — | Email regex + length ≤ 254 → upsert `newsletter_subscribers` |
+| `/api/search` | GET | — | 30/min/IP | — | Query ≤ 100 znaków, trim, pusty/za długi → `[]` |
 
-### Uwagi bezpieczeństwa
-- `CRON_SECRET` **fail-closed**: `if (!cronSecret || ...)` — brak env = 401 zamiast otwartego endpointu
-- Newsletter rate limit jest **per-instance** (in-memory Map) — docelowo Upstash Redis
-- Search query cap na 100 znaków (DoS guard), zarówno w API jak i w input (`maxLength`)
+### Uwagi
+- `rateLimit()` (`src/lib/rate-limit.ts`) to in-memory sliding window z periodic cleanup (1 min). IP pochodzi z `x-forwarded-for` → `x-real-ip` → `"unknown"`.
+- Cron auth: `if (!cronSecret || authHeader !== "Bearer " + cronSecret) return 401` — brak env = zamknięte.
 
 ---
 
@@ -422,20 +425,21 @@ Podpis uproszczony — usunięty nieużywany 3-ci parametr `sourceName`.
 
 | Route | Typ | Revalidate | Uwagi |
 |---|---|---|---|
-| `/` | Server + `(home)` route group | 300s | Hero + featured + latest + category highlights + newsletter |
-| `/article/[slug]` | Server + RSC | 60s | TOC, prose, share, adjacent, related |
-| `/category/[slug]?page=N` | Server | 300s | **Offset-based pagination** (rel=prev/next, str. X/Y) |
-| `/tag/[slug]` | Server | 300s | Limit 50 artykułów |
-| `/search` | Client | - | Debounce 300ms, `maxLength=100` |
-| `/about` | Server (static) | - | canonical: `/about` |
-| `/privacy` | Server (static) | - | canonical: `/privacy` |
-| `/feed.xml` | Route handler | 3600s | RSS 2.0 |
-| `/sitemap.xml` | Metadata route | - | URL dla articles + categories + tags |
-| `/robots.txt` | Metadata route | - | Allow all, disallow `/api/` `/admin/` |
+| `/` | Server, `(home)` route group | 300s | Hero + featured + latest (6 cards) + 4 sekcje kategorii (3 układy naprzemiennie) + newsletter + about/stats |
+| `/article/[slug]` | Server | 60s | Breadcrumbs + TOC + prose-article + share + adjacent + related; `NewsArticle` JSON-LD |
+| `/category/[slug]?page=N` | Server | 300s | Offset-based pagination, `rel=prev/next`, `ItemList` JSON-LD |
+| `/tag/[slug]` | Server | 300s | `CollectionPage` + `ItemList` JSON-LD, limit 50 |
+| `/search` | Client | — | Debounce 300ms, `maxLength=100`, `?q=` initial |
+| `/about` | Server (static) | — | canonical `/about` |
+| `/privacy` | Server (static) | — | canonical `/privacy` |
+| `/feed.xml` | Route handler | 3600s | RSS 2.0 z CDATA + escape XML + `<atom:link rel="self">` |
+| `/sitemap.xml` | Metadata route | — | Articles (priority 0.9/0.7) + categories (0.8) + tags (0.5) + static |
+| `/robots.txt` | Metadata route | — | `Allow: /`, `Disallow: /api/`, `/admin/` |
+| `/manifest.webmanifest` | Metadata route | — | PWA manifest, `lang: pl` |
 
-### Dostępne skróty
-- **Ctrl+K / Cmd+K** — otwiera `SearchModal` (toggle)
-- **`/`** — otwiera `SearchModal` (z dowolnego miejsca, jeśli focus nie jest w input/textarea)
+### Skróty klawiszowe
+- **Ctrl+K / Cmd+K** — toggle `SearchModal`
+- **`/`** — otwiera `SearchModal` (jeśli fokus nie jest w `<input>`/`<textarea>`)
 
 ---
 
@@ -445,12 +449,12 @@ Podpis uproszczony — usunięty nieużywany 3-ci parametr `sourceName`.
 
 | Komponent | Typ | Odpowiedzialność |
 |---|---|---|
-| `Header` | client | Sticky nav, logo, search trigger (Ctrl+K listener), theme toggle, mobile drawer z kategoriami |
-| `NewsTicker` | client | Marquee na WAAPI (Element.animate()) |
+| `Header` | client | Sticky nav, logo, search trigger, theme toggle, mobile drawer, Ctrl+K/`/` keyboard handler |
+| `NewsTicker` | client | Marquee na WAAPI (`Element.animate()`) — nieodbinderowany od nawigacji |
 | `Footer` | server | Branding, kategorie, linki, newsletter |
 | `NewsletterForm` | client | POST /api/newsletter, states idle/loading/success/error |
 | `ScrollToTop` | client | Floating button + reset scroll na route change |
-| `SearchModal` | client | `maxLength=100`; debounce 400ms |
+| `SearchModal` | client | Debounce 400ms, abort-aware fetch, `maxLength=100` |
 | `ThemeToggle` | client | `useSyncExternalStore` + MutationObserver na `html.class` |
 
 ### Artykuły (`src/components/articles/`)
@@ -458,145 +462,143 @@ Podpis uproszczony — usunięty nieużywany 3-ci parametr `sourceName`.
 | Komponent | Typ | Uwagi |
 |---|---|---|
 | `ArticleCard` | server | 3 warianty: default / featured / compact |
-| `Breadcrumbs` | server | + JSON-LD `BreadcrumbList` (przez `jsonLdScript`) |
-| `CategoryBar` | client | Scroll pos w sessionStorage |
+| `Breadcrumbs` | server | + `BreadcrumbList` JSON-LD (przez `jsonLdScript`) |
+| `CategoryBar` | client | Scroll position persist w sessionStorage |
 | `ReadingProgress` | client | `role="progressbar"`, fixed top |
-| `ShareButtons` | client | X / LinkedIn / Facebook + copy + `navigator.share` |
-| `TableOfContents` | client | Używa `slugifyHeading` — spójne z renderowaniem nagłówków |
+| `ShareButtons` | client | X / LinkedIn / Facebook + copy + `navigator.share` (progressive) |
+| `TableOfContents` | client | Lista `#id` anchorów ze `slugifyHeading()` (ta sama funkcja co markdown renderer → spójne kotwice) |
 
-### UI (shadcn/ui `src/components/ui/`)
-Button, Card, Dialog, Sheet, Input, InputGroup, Textarea, Badge, Avatar, Breadcrumb, **Pagination** (offset-based), Skeleton, ScrollArea, DropdownMenu, NavigationMenu, Separator, EmptyState.
+### UI (shadcn/ui, `src/components/ui/`)
+`Avatar`, `Badge`, `Breadcrumb`, `Button`, `Card`, `Dialog`, `DropdownMenu`, `EmptyState`, `Input`, `InputGroup`, `NavigationMenu`, `Pagination`, `ScrollArea`, `Separator`, `Sheet`, `Skeleton`, `Textarea`.
 
-**Usunięte**: `command.tsx` (cmdk) i `sonner.tsx` (toast) — zdezinstalowane z `package.json`.
+`Pagination` — offset-based, linki `?page=N`, `rel=prev/next`, wyświetla `X artykułów · str. Y/Z`.
 
 ---
 
 ## 11. Design system i style
 
-### Tailwind 4 (nowa składnia)
-
-- `globals.css` — `@import "tailwindcss"`, `@theme inline`, `@custom-variant dark`, `@utility`, `@layer base`
-- Brak `tailwind.config.js` (Tailwind 4 nie wymaga)
+### Tailwind 4
+- `globals.css`: `@import "tailwindcss"`, `@theme inline { --color-* }`, `@custom-variant dark (&:is(.dark *))`, `@utility`, `@layer base`
+- Brak `tailwind.config.js` (niepotrzebny w v4)
 - `postcss.config.mjs` → `@tailwindcss/postcss`
 
 ### Paleta (OKLCH)
 - Light: neutral-navy foreground, purple primary
 - Dark: deep navy background, luminous purple accents
+- CSS custom props: `--background`, `--foreground`, `--primary`, `--muted`, `--border`, …
 
 ### Typografia
 - Heading: Plus Jakarta Sans (500/600/700/800)
 - Body: Inter
 - Mono: JetBrains Mono (400/500/600)
-- `.prose-article` — klasa własna z `scroll-margin-top: 5rem` na h2/h3
+- `.prose-article` — własna klasa (**nie** `@tailwindcss/typography`) z `scroll-margin-top: 5rem` na h2/h3 (anchor scroll friendly)
 
 ### Animacje
-- `tw-animate-css` + `.animate-fade-in-up`, `.stagger-{1..6}`
-- `prefers-reduced-motion` respected
+- `tw-animate-css` + własne `.animate-fade-in-up`, `.stagger-{1..6}`
+- `prefers-reduced-motion` respected w `globals.css`
 
 ### Motyw
-- Skrypt inline w `<head>` — zapobiega flash (odczyt z localStorage + prefers-color-scheme)
+- Inline script w `<head>` przed hydratacją — czyta localStorage + `prefers-color-scheme`, zapobiega flash unstyled
 
 ---
 
 ## 12. SEO
 
-### Co jest
-
-- ✅ Metadata API Next.js (title template, OG, Twitter, canonical per-page)
-- ✅ JSON-LD: `Organization` (layout), `WebSite` z SearchAction (home), `NewsArticle` (single), `BreadcrumbList` (breadcrumbs), `CollectionPage`+`ItemList` (tag), `ItemList` (category) — **wszystko przez `jsonLdScript()` z escape'em `<>&U+2028/U+2029`**
-- ✅ Sitemap z priorytetami
-- ✅ RSS 2.0 feed (z poprawnym escape'em)
-- ✅ Metadata base + lang=pl, locale=pl_PL
-- ✅ Open Graph images z fallback
-- ✅ `rel="nofollow noopener noreferrer"` na share links
-- ✅ Reading time + structured data
-- ✅ 404 strona
-- ✅ **Heading anchor IDs zachowują polskie diakrytyki** (`ą→a`, `ł→l`…) przez `slugifyHeading()` (NFD + combining marks strip), spójnie w markdown rendererze i TOC
-- ✅ **Pagination `rel=prev/next`** na `/category/[slug]`
-- ✅ **Slugi artykułów** — buildUniqueSlug próbuje człowieczego slugu (retry z `-2`, `-3`…), dopiero przy wyczerpaniu używa timestampu
-
-### Czego brakuje / co jest zepsute
-
-- 🔴 **Canonical URL mismatch www vs non-www** — `siteConfig.url = NEXT_PUBLIC_SITE_URL || "https://aifeed.pl"`; jeśli env unset w Vercel, canonicals idą na non-www podczas gdy ruch jest na www. **Fix operacyjny:** `vercel env add NEXT_PUBLIC_SITE_URL https://www.aifeed.pl` (All Environments).
-- 🟡 **Angielskie route'y** dla polskiej strony (`/article/`, `/category/`, `/search/`, `/about`, `/privacy`) — SEO pod polski rynek. Nie zrobione — duży refactor (zmiana katalogów + redirect 301).
-- 🟡 **Placeholder `twitter`/`github`** w `siteConfig.links` — używane w `sameAs` w JSON-LD Organization, jeśli konta nie istnieją → niepoprawna karta. Wymaga decyzji biznesowej.
+- **Metadata API** — title template, description, canonical per-page, OG, Twitter card, locale `pl_PL`
+- **JSON-LD** — `Organization` (layout), `WebSite` + SearchAction (home), `NewsArticle` (single), `BreadcrumbList` (breadcrumbs), `CollectionPage` + `ItemList` (tag), `ItemList` (category). Wszystko serializowane przez `jsonLdScript()` — escape `<`, `>`, `&`, U+2028, U+2029 (nie da się uciec przez `</script>` w tytule).
+- **Sitemap** z priorytetami (articles 0.9/0.7, categories 0.8, tags 0.5)
+- **RSS 2.0** z CDATA + escape XML, `<atom:link rel="self">`, enclosure z miniaturą i inferowanym MIME
+- **Heading anchors** zachowują polskie diakrytyki (`ą→a`, `ł→l`, …) przez `slugifyHeading()` — spójnie w renderze i TOC
+- **Pagination** z `rel=prev/next` na `/category/[slug]`
+- **Slugi artykułów** czytelne po polsku (retry `-2`, `-3`, …); timestamp doklejany tylko przy wyczerpaniu próbek
+- **Reading time** + structured data
+- **404** strona z `<link rel="canonical">` ignorowanym
+- **`rel="nofollow noopener noreferrer"`** na share linkach
 
 ---
 
 ## 13. Bezpieczeństwo
 
-### Pozytywy
-- RLS włączony na wszystkich tabelach
-- Anon key w kodzie klienta — poprawne (RLS chroni)
-- Service role key tylko server-side (admin.ts, cron, newsletter POST)
-- Security headers: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, X-DNS-Prefetch-Control, **Strict-Transport-Security (HSTS)**
-- Rate limit na newsletter (5/min) i search (30/min)
-- Input validation email (regex + length ≤ 254)
-- **Cron auth fail-closed** — brak `CRON_SECRET` zwraca 401 (nie bypass)
-- External links na share mają `rel="nofollow noopener noreferrer"`
-- **JSON-LD eskapuje `<`, `>`, `&` i U+2028/U+2029** — niemożliwe uciekanie przez `</script>` w tytule
-- **SSRF hardening w scraperze** — `new URL(url)` + allowlist protokołu + blacklist hostów (localhost, RFC1918, link-local, IPv6 loopback/ULA)
-- **Search query cap (100 znaków)** — DoS guard w API + `maxLength` w input
+### Nagłówki (`src/proxy.ts`)
+- `X-Frame-Options: DENY`
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- `X-DNS-Prefetch-Control: on`
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
 
-### Do zrobienia
-- 🟡 **CSP header** — defense-in-depth poza JSON-LD escape
-- 🟡 **Rate limit in-memory** — nie działa multi-region (docelowo Upstash Redis)
+Matcher wyklucza `_next/static`, `_next/image` oraz statyczne zasoby metadata (favicon/icons/robots/sitemap/feed). API routes **są** w zakresie — korzystają z tych samych nagłówków.
+
+### Dostęp do danych
+- RLS włączony na wszystkich tabelach z odpowiednimi policy
+- Anon key w kodzie klienta (read-only przez RLS)
+- Service role key **tylko** server-side (`admin.ts` → cron + newsletter POST)
+
+### Input / walidacja
+- **Cron auth fail-closed** — brak `CRON_SECRET` = 401 (nie bypass)
+- **SSRF hardening** w scraperze — `new URL()` + protocol allowlist + internal host blacklist
+- **JSON-LD escape** przez `jsonLdScript()` — `</script>` injection niemożliwy
+- **Search query cap** 100 znaków (w API + `maxLength` input) — DoS guard
+- **Newsletter email** regex + length ≤ 254
+- **Rate limit** — 5/min newsletter, 30/min search
+- **Share links** — `rel="nofollow noopener noreferrer"`
 
 ---
 
 ## 14. Wydajność
 
-### Dobre praktyki
-- React Compiler ON — auto-memoizacja
-- Next.js Image z `sizes` i `priority` na hero
-- ISR `revalidate: 60-3600s` per route
-- `attachTagsBatch` eliminuje N+1
-- `Promise.all` w kilku miejscach
-- **Lazy Supabase client** — import modułu nie łączy się natychmiast
-- **Bounded queries** — `getArticlesByCategory` (limit 50), `getArticlesGroupedByCategory` (max 200 lub N×10), `getArticlesByTag` (limit 50)
-- **RPC `popular_tags`** — GROUP BY w PostgreSQL zamiast pobierania całego `article_tags`
-- `@vercel/analytics` + GA — real user metrics
-
-### Miejsca na dalszą optymalizację
-- 🟡 `ReadingProgress` i `ScrollToTop` — 2 osobne scroll listenery (można scalić)
-- 🟡 Brak prefetch wyselekcjonowanych linków w hero, brak preload obrazów
-- 🟡 Brak `@vercel/speed-insights` (Analytics jest; Speed Insights osobno) — opcjonalne
+- **React Compiler** ON — auto-memoizacja komponentów i hooków
+- **Next.js Image** z `sizes` i `priority` na hero
+- **ISR** `revalidate` 60-3600s per route
+- **`attachTagsBatch()`** — eliminacja N+1 dla tagów
+- **`Promise.all`** dla równoległych zapytań layoutu
+- **Lazy Supabase client** — import `data.ts` nie wymaga połączenia
+- **Bounded queries** — `getArticlesByCategory` 50, `getArticlesByTag` 50, `getArticlesGroupedByCategory` `max(N × limit × 10, 200)`
+- **RPC `popular_tags`** — `GROUP BY` w PostgreSQL zamiast pobierania całej junction table
+- **`@vercel/analytics` + GA** — real user metrics
+- **Turbopack** — dev i production build
 
 ---
 
 ## 15. Testy
 
-### Co jest (`vitest run` — **28 testów passed**)
-- `src/lib/data.test.ts` — testy `escapeIlike`, `sanitizeOrQuery`, `pluralize` — **importują rzeczywisty kod** z `src/lib/search-utils.ts`
-- `src/lib/rate-limit.test.ts` — 4 testy `rateLimit()`
-- `src/components/ui/empty-state.test.tsx` — RTL testy
-- `src/config/site.test.ts`
+`npm test` → **28/28 passing** w 4 plikach:
 
-### Do zrobienia
-- 🟡 Testy integracyjne pipeline'u (`parser.ts`, `writer.ts`, `quality.ts`, `content.ts`, `generator.ts`)
-- 🟡 Testy komponentów (ArticleCard, Header, NewsTicker, TOC, ShareButtons, NewsletterForm)
-- 🟡 Testy API routes (`/api/newsletter`, `/api/search`, `/api/cron/*`)
-- 🟡 E2E (Playwright/Cypress)
+| Plik | Zakres |
+|---|---|
+| `src/lib/data.test.ts` | `escapeIlike`, `sanitizeOrQuery`, `pluralize` — importują rzeczywisty kod z `search-utils.ts` |
+| `src/lib/rate-limit.test.ts` | `rateLimit()` — 4 przypadki |
+| `src/components/ui/empty-state.test.tsx` | RTL — render + props |
+| `src/config/site.test.ts` | Spójność config |
+
+### Komendy
+```bash
+npm run lint        # eslint — 0 errors, 0 warnings
+npx tsc --noEmit    # typecheck — exit 0
+npm test            # vitest — 28/28 passing
+npm run build       # next build (Turbopack) — bez ostrzeżeń deprecation
+```
 
 ---
 
 ## 16. Konfiguracja i środowisko
 
-### Zmienne środowiskowe
+### Zmienne środowiskowe (`.env.example`)
 
-| Zmienna | Cel | Gdzie |
+| Zmienna | Cel | Źródło |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | URL Supabase | Vercel + .env.local |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key (RLS-protected) | Vercel + .env.local |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role (bypass RLS) | Vercel (secure) |
-| `OPENROUTER_API_KEY` | OpenRouter API | Vercel (secure) |
-| `CRON_SECRET` | Bearer dla cron auth — **obowiązkowy** (fail-closed) | Vercel (secure) |
-| `NEXT_PUBLIC_SITE_URL` | Used by siteConfig. Produkcja: `https://www.aifeed.pl`. Dev: `http://localhost:3000`. | Vercel + .env.local |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL projektu Supabase | Vercel + `.env.local` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key (RLS-protected) | Vercel + `.env.local` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role — bypass RLS | Vercel (secure) |
+| `OPENROUTER_API_KEY` | OpenRouter API — Claude + Gemini | Vercel (secure) |
+| `CRON_SECRET` | Bearer dla cron (obowiązkowy, fail-closed) | Vercel (secure) |
+| `NEXT_PUBLIC_SITE_URL` | Base URL w SEO/sitemap/RSS/OG. Produkcja: `https://www.aifeed.pl`. Dev: `http://localhost:3000` | Vercel + `.env.local` |
 
-`.env.example` zawiera komentarz o wymaganiu wariantu www na produkcji.
+### `next.config.ts`
+- `reactCompiler: true`
+- `images.remotePatterns` — wybrane znane domeny + wildcard HTTPS `**` (pipeline scrape'uje z nieprzewidywalnych źródeł)
 
 ### `vercel.json`
-
 ```json
 {
   "crons": [
@@ -607,126 +609,77 @@ Button, Card, Dialog, Sheet, Input, InputGroup, Textarea, Badge, Avatar, Breadcr
 }
 ```
 
-### `next.config.ts`
-- `reactCompiler: true` ✅
-- `images.remotePatterns` — wildcard na HTTPS (pipeline scrape'uje z różnych domen)
-
-### `src/proxy.ts` (dawniej `middleware.ts`)
-
-Next.js 16 przemianował `middleware` na `proxy`. Eksportowana funkcja nazywa się `proxy`, konfiguracja matchera bez zmian. Security headers (w tym HSTS) ustawiane dla wszystkich ścieżek poza statycznymi assetami. API routes są świadomie w zakresie — korzystają z tych samych nagłówków.
+### `src/proxy.ts`
+Eksportuje funkcję `proxy()` (Next.js 16 konwencja) + `config.matcher`. Wszystkie security headers w jednym miejscu.
 
 ---
 
 ## 17. Wdrożenie i deployment
 
-### Aktywna infrastruktura
-- **Vercel Project**: `aifeed-pl` (id: `prj_rmKqGPpHZ6crRr7wTbYhGTO1tNRS`)
+### Infrastruktura
+- **Vercel project**: `aifeed-pl` (id `prj_rmKqGPpHZ6crRr7wTbYhGTO1tNRS`)
 - **Team**: `m-zeprzalkas-projects`
 - **Domeny**: `aifeed.pl`, `www.aifeed.pl` (aliasy)
 - **Cron**: 3×/dzień (5:00, 11:00, 17:00 UTC)
 - **Node runtime**: 24.x
+- **Google Analytics**: `G-5SD17PTF0C`
 
 ### Lokalna weryfikacja
-
 ```bash
+npm run dev         # http://localhost:3000
 npm run lint        # 0 errors, 0 warnings
 npx tsc --noEmit    # exit 0
 npm test            # 28/28 passing
-npm run build       # Turbopack, bez deprecation warnings
+npm run build       # Turbopack, brak deprecation
 ```
 
----
+### Ręczne wywołanie pipeline'u
+```bash
+CRON_SECRET=$(grep '^CRON_SECRET=' .env.local | cut -d= -f2-)
+curl -X POST -H "Authorization: Bearer $CRON_SECRET" \
+  "http://localhost:3000/api/cron/generate?count=10"
+```
 
-## 18. ✅ ZREALIZOWANE POPRAWKI
-
-Poprawki zaimplementowane w tej rewizji (wszystkie krytyczne z pierwotnego raportu + higiena kodu i typechecka):
-
-### Bezpieczeństwo (P0/P1)
-- **§18.1 Fail-open cron auth → fail-closed.** `/api/cron/generate` i `/api/cron/seed`: warunek zmieniony z `if (cronSecret && ...)` na `if (!cronSecret || ...)`. Brak env = 401, nie otwarty endpoint.
-- **§18.15 JSON-LD `</script>` escape.** Nowy helper `src/lib/jsonld.ts` → `jsonLdScript()` eskapuje `<`, `>`, `&`, U+2028, U+2029. Podstawiony w `layout.tsx`, `(home)/page.tsx`, `article/[slug]/page.tsx`, `category/[slug]/page.tsx`, `tag/[slug]/page.tsx`, `components/articles/breadcrumbs.tsx`.
-- **§18.24 SSRF hardening.** `scrapeArticleContent()` przed fetch: `new URL(url)`, wymusza `http(s):`, blokuje localhost / RFC1918 / link-local / IPv6 loopback/ULA.
-- **§18.12 Search DoS guard.** `SEARCH_QUERY_MAX_LENGTH = 100` eksportowane z `search-utils.ts` i stosowane w `/api/search`, `/search/page.tsx`, `SearchModal`.
-- **§18.5 `searchArticles` escape.** Nowa funkcja `sanitizeOrQuery()` — escape `%_\` + strip `,()` (syntax chars PostgREST `.or()`).
-- **HSTS header** dodany w `proxy.ts` (`max-age=63072000; includeSubDomains; preload`).
-
-### Schema / Dane (P0/P1)
-- **§18.2 `newsletter_subscribers` w schema.sql.** Tabela z UNIQUE email + RLS bez publicznej policy (admin-only).
-- **§18.6 Lazy Supabase client.** `data.ts` — zamiast singletonu na top-level mamy funkcję `db()` konstruującą client przy pierwszym użyciu. Import modułu nie wymaga env vars.
-- **§18.8 Limit w `getArticlesByCategory`.** Domyślny limit 50 zamiast zwracania wszystkiego. To samo dla `getArticlesByTag`.
-- **§18.9 `getPopularTags` jako RPC.** Nowa funkcja SQL `popular_tags(tag_limit)` z GROUP BY. Fallback in-memory jeśli RPC niedostępne.
-- **§18.23 `maybeSingle()` zamiast `.single()`** w `getArticleBySlug`, `getCategoryBySlug`, `getTagBySlug`, `getAdjacentArticles`, lookup kategorii w cron/generate.
-- **Bounded pull w `getArticlesGroupedByCategory`** — max 200 lub N×10×limitPerCategory (było: pełny select).
-
-### SEO / UX (P1/P2)
-- **§18.31 Polska diakrytyka w heading IDs.** Nowy `src/lib/heading-id.ts` → `slugifyHeading()` (NFD + combining mark strip + `ł→l`). Użyty **identycznie** w markdown rendererze (`article/[slug]/page.tsx`) i TOC (`table-of-contents.tsx`) — kotwice działają.
-- **§18.11 Offset-based pagination.** `getArticlesByCategoryPaginated(slug, pageSize, page)` zwraca `{page, totalPages, total, hasPrev, hasNext}`. `Pagination` UI linkuje do `?page=N`, "Nowsze" cofa o jedną stronę zamiast do `page=1`. Dodano `rel=prev/next`.
-- **§18.18 Ctrl+K dla SearchModal.** Handler w `Header`: `Cmd/Ctrl+K` toggluje modal, `/` otwiera (gdy focus nie jest w input/textarea).
-- **§18.30 Czystsze slugi artykułów.** `buildUniqueSlug()` w cron/generate: próbuje czystego slugu, przy kolizji dokleja `-2`, `-3`, …; dopiero w skrajnym przypadku używa timestampu.
-
-### Pipeline observability (P2)
-- **§18.26 `failed[]` w response pipeline'u.** `/api/cron/generate` teraz zwraca `{generated, rejected, failed: [{title, reason}], scraped, new}`. Powody: `source-too-short`, `ai-refusal`, `insert-failed: ...`, raw error.
-
-### Testy (P0)
-- **§18.4 `data.test.ts` testuje rzeczywisty kod.** Wspólne helpery wyciągnięte do `src/lib/search-utils.ts` (`escapeIlike`, `sanitizeOrQuery`, `pluralize`, `SEARCH_QUERY_MAX_LENGTH`). Testy importują eksport, nie kopię funkcji. Dodane testy dla `sanitizeOrQuery`. **28/28 passing.**
-
-### Cleanup (P2)
-- **§18.16 Komentarz w matcherze poprawiony.** Komentarz wyjaśnia że API routes są celowo w zakresie, plus rename na `proxy.ts` (Next.js 16 migration).
-- **§18.17 Nieużywane pliki i deps.**
-  - `sonner` i `cmdk` — usunięte z `package.json`
-  - `src/components/ui/sonner.tsx` i `src/components/ui/command.tsx` — skasowane
-  - `src/lib/supabase/client.ts` i `src/lib/supabase/server.ts` — skasowane (tylko `admin.ts` pozostaje, używane przez cron i newsletter)
-- **§18.29 `src/app/examples/` → `docs/examples/`.** 5 mockupów HTML wyjętych z App Router (nie są publicznie dostępne).
-- **Next.js 16 migration.** `middleware.ts` → `proxy.ts`, funkcja `middleware()` → `proxy()`. Build bez deprecation warnings.
-- **`getArticleThumbnail(title, sourceUrl)`** — usunięty nieużywany trzeci argument, zaktualizowane callers.
-- **Lint czysty** — 0 errors, 0 warnings (`react/no-unescaped-entities` w SearchModal oraz unused vars w middleware/generator naprawione).
-
-### Instrumentacja
-- **@vercel/analytics** — już w dependencies, dodane `<Analytics />` do root layout (obok GoogleAnalytics).
-
-### Dokumentacja / konfiguracja
-- **§18.27 `.env.example`** — dodany komentarz o wariancie `https://www.aifeed.pl` dla produkcji (wyjaśnia §18.3).
-- **Schema.sql** — RPC `popular_tags` i tabela `newsletter_subscribers` dopisane (DB wymaga redeployu przez SQL Editor, zob. §19).
+Zwraca `{message, generated[], rejected[], failed[{title,reason}], scraped, new}`. Powody w `failed`: `source-too-short`, `ai-refusal`, `insert-failed: …`, raw error message.
 
 ---
 
-## 19. 🎯 POZOSTAŁY BACKLOG
+## 18. 🎯 DO ZROBIENIA
 
-Punkty z pierwotnego raportu, które wymagają decyzji operacyjnych (poza kodem) lub są odkładalne:
+### 🔑 Akcje operacyjne (poza kodem, Vercel / Supabase dashboard)
 
-### Wymaga akcji operacyjnej (Vercel dashboard)
-- **§18.3** — `vercel env add NEXT_PUBLIC_SITE_URL https://www.aifeed.pl` (All Environments). Bez tego canonicals wskazują na non-www a ruch idzie na www.
-- **§18.20** — usunąć martwy projekt `aifeed` (nie `aifeed-pl`) z dashboardu Vercel.
-- **Rotacja kluczy** — `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` (standardowa higiena).
-- **Deploy RPC `popular_tags`** — uruchomić aktualne `supabase/schema.sql` w SQL Editor, żeby `getPopularTags` przestał spadać do in-memory aggregate.
+1. **`NEXT_PUBLIC_SITE_URL = https://www.aifeed.pl`** w Vercel (All Environments). Bez tego `<link rel="canonical">` wskazuje na non-www, podczas gdy ruch idzie na www — Google widzi rozbieżność.
+2. **Wygenerować nowy `OPENROUTER_API_KEY`** — aktualny zwraca 401 "User not found" w pipeline (potwierdzone próbnym triggerem). Podmienić w `.env.local` **oraz** Vercel Project Settings → Environment Variables.
+3. **Zaaplikować aktualne `supabase/schema.sql`** w Supabase SQL Editor — żeby RPC `popular_tags` i tabela `newsletter_subscribers` były w produkcji (obecnie `getPopularTags` spada do in-memory fallback, co widać w logach buildu).
+4. **Rotacja kluczy** — `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` (standardowa higiena po współdzieleniu podczas developmentu).
+5. **Usunąć martwy projekt Vercel** `aifeed` (nie `aifeed-pl`) z dashboardu.
 
-### Duże refaktory odłożone
-- **§18.14 Polonizacja URL-i** (`/artykul/`, `/kategoria/`, `/szukaj`, `/o-serwisie`, `/polityka-prywatnosci`) — wymaga zmiany katalogów + search&replace + redirect 301 w `next.config.ts`. Największy pojedynczy SEO-boost, ale to dzień pracy plus testy.
-- **§18.10 Rate limit multi-region** — przejście na Upstash Redis przez Vercel Marketplace. Obecny in-memory Map wystarcza przy małym ruchu, ale nie skaluje poprawnie.
-- **Testy integracyjne / E2E** — `parser.ts`, `writer.ts::extractMeta`, `quality.ts`, `content.ts`, API routes, E2E z Playwright.
-- **CSP header** — wymaga zdefiniowania nonce + inventory zewnętrznych domen (GA, Vercel Analytics, Supabase, OpenRouter obrazy).
+### 🏗️ Duże prace (code, wymagają zaplanowania)
 
-### Polish / drobne
-- **§18.7 Quality gate kalibracja** — "soft warnings" dla score 40-60.
-- **§18.13 `siteConfig.links`** — decyzja czy usunąć `twitter`/`github` z `sameAs`, czy założyć konta.
-- **§18.19 `vercel.ts` zamiast `vercel.json`** — opcjonalne, JSON nadal wspierany.
-- **§18.21 Polskie źródła RSS** — Spider's Web / AntyWeb mają dużo szumu; filtr AI mitiguje, ale można poszukać bardziej celowanych feedów.
-- **§18.22 NewsTicker fonts race** — `document.fonts.ready` + ResizeObserver.
-- **§18.28 Ujednolicone error handling** — wspólny helper `handleQuery<T>(result, fallback)` w `data.ts`.
-- **§18.32 Per-source cap RSS** — bez priorytetyzacji nowych itemów (dedup w cron działa, ale okazjonalnie gubi itemy).
+6. **Polonizacja URL-i** — `/artykul/[slug]`, `/kategoria/[slug]`, `/szukaj`, `/o-serwisie`, `/polityka-prywatnosci`. Największy pojedynczy SEO-boost na polski rynek, ale:
+   - rename katalogów w `src/app/`
+   - search&replace ~50 miejsc `<Link href="/article/...">` → `/artykul/...`
+   - update `sitemap.ts`, `feed.xml`, JSON-LD, `robots.ts`
+   - **301 redirecty** z starych tras w `next.config.ts` (`redirects()`)
+   - test manualny i preview deploy przed merge
+7. **Rate limit multi-region** — przejście z in-memory `Map` na Upstash Redis przez Vercel Marketplace (`@upstash/ratelimit`). Obecnie ogranicza tylko per-instance; multi-instance deployment obchodzi limit.
+8. **Content-Security-Policy header** — wymaga inventory zewnętrznych domen (GA, Vercel Analytics, Supabase, OpenRouter, obrazy scrape'owane z 20+ domen) + nonce dla inline script motywu. Nietrywialne — trzeba testować pod `report-only` zanim enforced.
+9. **Testy integracyjne i E2E:**
+   - unit: `parser.ts`, `writer.ts::extractMeta`, `quality.ts`, `content.ts` (z mock fetch), `generator.ts::scrapeOgImage`
+   - API routes z mock Supabase
+   - E2E (Playwright) — home, search, article, newsletter, pagination
 
----
+### 🔧 Polish / drobne
 
-## PODSUMOWANIE TEJ REWIZJI
-
-Naprawione **wszystkie cztery P0** z pierwotnego raportu (fail-open cron, brak tabeli newsletter, testy nic-nie-testujące, eskpae JSON-LD) plus cały stos P1/P2, który dało się zamknąć kodem bez zmian operacyjnych.
-
-**Build, lint i testy są czyste:**
-- `npm run lint` — 0 problems
-- `npx tsc --noEmit` — exit 0
-- `npm test` — 28/28 passing (o 3 więcej niż przed rewizją)
-- `npm run build` — brak ostrzeżeń deprecation (migracja `middleware` → `proxy` wykonana)
-
-**Pozostały backlog** to głównie rzeczy operacyjne (Vercel dashboard env vars, rotacja kluczy, deploy RPC) i decyzje biznesowe (polonizacja URL, Upstash Redis, E2E).
+10. **Quality gate kalibracja** — score 40-60 jako "soft warnings" (zachowaj z flagą), score < 40 = hard reject. Obecny próg 50 bywa surowy dla krótkich ale dobrych artykułów.
+11. **`siteConfig.links` placeholdery** — `twitter: "https://twitter.com/aifeed"`, `github: "https://github.com/aifeed"` idą do `sameAs` w JSON-LD Organization. Jeśli konta nie istnieją, struktura jest formalnie nieprawidłowa. Decyzja: założyć konta albo usunąć `sameAs`.
+12. **`vercel.ts` zamiast `vercel.json`** — TypeScript config z `@vercel/config` (rekomendowane od 2026). Opcjonalne — JSON nadal działa.
+13. **Polskie źródła RSS** — Spider's Web / AntyWeb mają dużo szumu tech-general, filtr AI mitiguje ale można poszukać feedów dedykowanych AI/ML w PL.
+14. **NewsTicker fonts race** — `firstCopy.offsetWidth` czasem 0 przed załadowaniem fontów; dodać `document.fonts.ready` + `ResizeObserver`.
+15. **Ujednolicone error handling w `data.ts`** — wspólny helper `handleQuery<T>(result, fallback)` zamiast `if (error) { console.error; return ... }` w każdej funkcji.
+16. **Scalenie scroll listenerów** — `ReadingProgress` i `ScrollToTop` subskrybują osobne `scroll` eventy; można scalić przez wspólny hook.
+17. **Per-source RSS cap** — obecnie `slice(0, 10)` na każdym feedzie, bez priorytetyzacji "jeszcze nie widziane". TechCrunch w godzinach szczytu gubi itemy między triggerami.
+18. **`@vercel/speed-insights`** — `@vercel/analytics` jest, Speed Insights osobno (Core Web Vitals z RUM).
 
 ---
 
