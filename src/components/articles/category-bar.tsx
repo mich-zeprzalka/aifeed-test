@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, useEffect } from "react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useEffect, useRef } from "react";
 import type { Category } from "@/types/database";
 
 interface CategoryBarProps {
   categories: Category[];
 }
+
+const SCROLL_STORAGE_KEY = "aifeed:category-bar-scroll";
 
 export function CategoryBar({ categories }: CategoryBarProps) {
   const pathname = usePathname();
@@ -16,61 +17,74 @@ export function CategoryBar({ categories }: CategoryBarProps) {
     ? pathname.split("/")[2]
     : undefined;
   const isHome = pathname === "/";
-  const activeRef = useRef<HTMLAnchorElement>(null);
-  const hasScrolled = useRef(false);
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
+  // Restore scroll position on mount; persist on scroll.
   useEffect(() => {
-    hasScrolled.current = false;
-  }, [activeSlug]);
+    const el = scrollerRef.current;
+    if (!el) return;
 
-  useEffect(() => {
-    if (hasScrolled.current) return;
-    const frame = requestAnimationFrame(() => {
-      if (activeRef.current && !hasScrolled.current) {
-        hasScrolled.current = true;
-        activeRef.current.scrollIntoView({
-          behavior: "instant",
-          block: "nearest",
-          inline: "start",
-        });
-      }
-    });
-    return () => cancelAnimationFrame(frame);
-  });
+    const saved = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+    if (saved) {
+      const parsed = Number(saved);
+      if (Number.isFinite(parsed)) el.scrollLeft = parsed;
+    }
+
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        sessionStorage.setItem(SCROLL_STORAGE_KEY, String(el.scrollLeft));
+      });
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   return (
     <nav aria-label="Kategorie" className="border-b border-border/40 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <ScrollArea className="w-full">
-          <div role="tablist" className="flex items-center gap-2 py-3">
-            <Link
-              href="/"
-              ref={isHome && !activeSlug ? activeRef : undefined}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                isHome && !activeSlug
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              Wszystko
-            </Link>
-            {categories.map((cat) => (
+        <div
+          ref={scrollerRef}
+          role="tablist"
+          className="no-scrollbar flex items-center gap-2 overflow-x-auto py-3"
+        >
+          <Link
+            href="/"
+            role="tab"
+            aria-selected={isHome && !activeSlug}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              isHome && !activeSlug
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            Wszystko
+          </Link>
+          {categories.map((cat) => {
+            const isActive = activeSlug === cat.slug;
+            return (
               <Link
                 key={cat.slug}
                 href={`/category/${cat.slug}`}
-                ref={activeSlug === cat.slug ? activeRef : undefined}
+                role="tab"
+                aria-selected={isActive}
                 className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                  activeSlug === cat.slug
+                  isActive
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
                 {cat.name}
               </Link>
-            ))}
-          </div>
-          <ScrollBar orientation="horizontal" className="invisible" />
-        </ScrollArea>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

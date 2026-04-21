@@ -13,40 +13,13 @@ const NAV_LINKS = [
   { name: "RSS", href: "/feed.xml" },
 ];
 
-export function Header({ tickerItems }: { tickerItems: { title: string; slug: string }[] }) {
+export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <>
-      {/* Ticker — scrolls away naturally, not sticky */}
-      <div className="border-b border-border bg-foreground overflow-hidden pause-on-hover">
-        <div className="flex">
-          {[0, 1].map((copy) => (
-            <div
-              key={copy}
-              className="animate-marquee flex items-center whitespace-nowrap"
-              aria-hidden={copy === 1 || undefined}
-            >
-              {tickerItems.map((item, i) => (
-                <span key={i} className="contents">
-                  <Link
-                    href={`/article/${item.slug}`}
-                    className="shrink-0 py-1.5 text-xs text-background/70 hover:text-background transition-colors"
-                    tabIndex={copy === 1 ? -1 : undefined}
-                  >
-                    {item.title}
-                  </Link>
-                  <span className="shrink-0 text-background/30 text-[8px] mx-2" aria-hidden="true">&bull;</span>
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Header — sticky */}
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
@@ -90,6 +63,8 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
               onClick={() => setMobileOpen(!mobileOpen)}
               className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors md:hidden"
               aria-label="Menu"
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-nav"
             >
               {mobileOpen ? <X className="size-4" /> : <Menu className="size-4" />}
             </button>
@@ -98,6 +73,7 @@ export function Header({ tickerItems }: { tickerItems: { title: string; slug: st
 
         {/* Mobile nav — animated with grid-rows transition */}
         <div
+          id="mobile-nav"
           className={`grid md:hidden transition-[grid-template-rows] duration-300 ease-out ${
             mobileOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
           }`}

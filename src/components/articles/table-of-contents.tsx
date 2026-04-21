@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { List, ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 interface TocItem {
   id: string;
   text: string;
   level: number;
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-");
 }
 
 function extractHeadings(markdown: string): TocItem[] {
@@ -18,12 +24,7 @@ function extractHeadings(markdown: string): TocItem[] {
     if (match) {
       const level = match[1].length;
       const text = match[2].trim();
-      // Generate id matching how ReactMarkdown generates heading ids
-      const id = text
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/\s+/g, "-");
-      headings.push({ id, text, level });
+      headings.push({ id: slugify(text), text, level });
     }
   }
 
@@ -35,24 +36,12 @@ interface TableOfContentsProps {
 }
 
 export function TableOfContents({ content }: TableOfContentsProps) {
-  const headings = extractHeadings(content);
+  const headings = useMemo(() => extractHeadings(content), [content]);
   const [activeId, setActiveId] = useState<string>("");
-  const [isOpen, setIsOpen] = useState(false);
 
-  // Don't render if fewer than 3 headings
-  if (headings.length < 3) return null;
-
-  const handleClick = useCallback((id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-      setIsOpen(false);
-    }
-  }, []);
-
-  // Track active heading via Intersection Observer
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
+    if (headings.length < 3) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -61,7 +50,7 @@ export function TableOfContents({ content }: TableOfContentsProps) {
           }
         }
       },
-      { rootMargin: "-80px 0px -80% 0px" }
+      { rootMargin: "-96px 0px -70% 0px" }
     );
 
     for (const heading of headings) {
@@ -72,81 +61,34 @@ export function TableOfContents({ content }: TableOfContentsProps) {
     return () => observer.disconnect();
   }, [headings]);
 
-  return (
-    <>
-      {/* Mobile: collapsible */}
-      <div className="lg:hidden mb-8">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex w-full items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3 text-sm font-medium"
-        >
-          <span className="flex items-center gap-2">
-            <List className="size-4 text-muted-foreground" />
-            Spis treści
-          </span>
-          <ChevronDown
-            className={`size-4 text-muted-foreground transition-transform duration-200 ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-        <div
-          className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-            isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          }`}
-        >
-          <div className="overflow-hidden">
-            <nav className="mt-2 rounded-xl border border-border/60 bg-card p-4">
-              <ul className="space-y-1">
-                {headings.map((h) => (
-                  <li key={h.id}>
-                    <button
-                      onClick={() => handleClick(h.id)}
-                      className={`block w-full text-left text-sm leading-relaxed transition-colors hover:text-foreground ${
-                        h.level === 3 ? "pl-4" : ""
-                      } ${
-                        activeId === h.id
-                          ? "text-primary font-medium"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {h.text}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-        </div>
-      </div>
+  if (headings.length < 3) return null;
 
-      {/* Desktop: sticky sidebar-style within content */}
-      <div className="hidden lg:block float-right ml-6 mb-4 w-56">
-        <nav className="rounded-xl border border-border/60 bg-card/80 p-4">
-          <p className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground mb-3">
-            <List className="size-3.5" />
-            Spis treści
-          </p>
-          <ul className="space-y-1">
-            {headings.map((h) => (
-              <li key={h.id}>
-                <button
-                  onClick={() => handleClick(h.id)}
-                  className={`block w-full text-left text-sm leading-relaxed transition-colors hover:text-foreground ${
-                    h.level === 3 ? "pl-3 border-l border-border/40" : ""
-                  } ${
-                    activeId === h.id
-                      ? "text-primary font-medium"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {h.text}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
-    </>
+  return (
+    <nav aria-label="Spis treści" className="mb-10">
+      <h2 className="mb-3 text-[11px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+        Spis treści
+      </h2>
+      <ol className="space-y-1.5 border-l border-border/60">
+        {headings.map((h) => {
+          const isActive = activeId === h.id;
+          return (
+            <li key={h.id}>
+              <a
+                href={`#${h.id}`}
+                className={`block border-l-2 -ml-px py-0.5 text-sm leading-snug transition-colors ${
+                  h.level === 3 ? "pl-7" : "pl-4"
+                } ${
+                  isActive
+                    ? "border-primary text-foreground font-medium"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {h.text}
+              </a>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }
