@@ -1,19 +1,32 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { ArrowUp } from "lucide-react";
+
+// useLayoutEffect warns on the server; swap to useEffect during SSR.
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 export function ScrollToTop() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
 
-  // Scroll to top on route change
-  useEffect(() => {
-    window.scrollTo(0, 0);
+  // Reset scroll SYNCHRONOUSLY before paint on route change so the user never
+  // sees the previous page's scroll position applied to the new page. Running
+  // in useEffect (after paint) leaves a visible flash — the new page is shown
+  // at the old scroll offset and then jumps. Anchor links (URL hash) are
+  // honored — the browser scrolls to the target itself, so we skip the reset.
+  useIsoLayoutEffect(() => {
+    if (window.location.hash) return;
+
+    // `behavior: "instant"` overrides any CSS `scroll-behavior: smooth` for
+    // this programmatic jump. A smooth animation on route change looks like
+    // the navigation failed.
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, [pathname]);
 
-  // Show/hide floating button based on scroll position
+  // Show/hide floating button based on scroll position.
   useEffect(() => {
     const handleScroll = () => {
       setVisible(window.scrollY > 400);

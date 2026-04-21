@@ -39,8 +39,19 @@ export function Header() {
     <>
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Logo */}
-          <Link href="/" className="group flex shrink-0 items-center gap-2">
+          {/* Logo — also works as scroll-to-top when already on the home page
+              (Next.js skips the route change when href matches current path,
+              so we need an explicit handler). */}
+          <Link
+            href="/"
+            className="group flex shrink-0 items-center gap-2"
+            onClick={(e) => {
+              if (pathname === "/") {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+          >
             <span className="font-heading text-xl font-extrabold tracking-tight text-foreground">
               aifeed<span className="text-primary">.</span>
             </span>
@@ -100,6 +111,17 @@ export function Header() {
             <div className="border-t border-border/50 bg-background">
               <nav className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
                 <div className="flex flex-col gap-0.5">
+                  <Link
+                    href="/"
+                    onClick={() => setMobileOpen(false)}
+                    className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                      pathname === "/"
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    Wszystko
+                  </Link>
                   {siteConfig.categories.map((cat) => {
                     const href = `/category/${cat.slug}`;
                     const active = pathname === href;
