@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
 import { siteConfig } from "@/config/site";
 import { getTickerArticles } from "@/lib/data";
+import { GoogleAnalytics } from '@next/third-parties/google';
 import "./globals.css";
 
 const inter = Inter({
@@ -103,6 +104,7 @@ export default async function RootLayout({
         <NewsTicker items={tickerItems} />
         <Header />
         <main id="main-content" className="flex-1">{children}</main>
+        <GoogleAnalytics gaId="G-5SD17PTF0C" />
         <Footer />
       </body>
     </html>
