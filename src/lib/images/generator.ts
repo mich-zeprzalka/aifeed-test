@@ -15,8 +15,7 @@ export interface ThumbnailResult {
  */
 export async function getArticleThumbnail(
   title: string,
-  sourceUrl: string,
-  sourceName: string
+  sourceUrl: string
 ): Promise<ThumbnailResult> {
   // Step 1: Try scraping og:image from source (free)
   console.log("[Thumbnail] Trying og:image scrape from source...");

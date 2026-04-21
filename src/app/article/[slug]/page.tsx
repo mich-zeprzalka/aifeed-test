@@ -10,6 +10,8 @@ import { ShareButtons } from "@/components/articles/share-buttons";
 import { ReadingProgress } from "@/components/articles/reading-progress";
 import { TableOfContents } from "@/components/articles/table-of-contents";
 import { siteConfig } from "@/config/site";
+import { jsonLdScript } from "@/lib/jsonld";
+import { slugifyHeading } from "@/lib/heading-id";
 import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -108,7 +110,7 @@ export default async function ArticlePage({ params }: PageProps) {
         {/* JSON-LD */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
         />
 
         {/* Article header */}
@@ -190,13 +192,11 @@ export default async function ArticlePage({ params }: PageProps) {
               remarkPlugins={[remarkGfm]}
               components={{
                 h2: ({ children, ...props }) => {
-                  const text = String(children);
-                  const id = text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+                  const id = slugifyHeading(String(children));
                   return <h2 id={id} {...props}>{children}</h2>;
                 },
                 h3: ({ children, ...props }) => {
-                  const text = String(children);
-                  const id = text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+                  const id = slugifyHeading(String(children));
                   return <h3 id={id} {...props}>{children}</h3>;
                 },
                 a: ({ href, children, ...props }) => (

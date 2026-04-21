@@ -56,6 +56,15 @@ CREATE TABLE IF NOT EXISTS scraped_items (
   is_processed BOOLEAN DEFAULT false
 );
 
+-- Newsletter subscribers
+-- Written via service-role client only (no public RLS policy intentionally).
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  subscribed_at TIMESTAMPTZ DEFAULT now(),
+  unsubscribed_at TIMESTAMPTZ
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug);
 CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(is_published, published_at DESC);
@@ -69,6 +78,7 @@ ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE article_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scraped_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 
 -- Public read policies
 CREATE POLICY "Public read articles" ON articles FOR SELECT USING (is_published = true);
@@ -77,6 +87,19 @@ CREATE POLICY "Public read tags" ON tags FOR SELECT USING (true);
 CREATE POLICY "Public read article_tags" ON article_tags FOR SELECT USING (true);
 
 -- Service role has full access via admin client (bypasses RLS)
+
+-- RPC: aggregate top N tags by usage count (server-side GROUP BY).
+-- Used by getPopularTags() in src/lib/data.ts. Falls back to in-memory
+-- aggregation in the app when this function is missing.
+CREATE OR REPLACE FUNCTION popular_tags(tag_limit INT)
+RETURNS TABLE (id UUID, name TEXT, slug TEXT, count BIGINT) AS $$
+  SELECT t.id, t.name, t.slug, COUNT(*) AS count
+  FROM article_tags at
+  JOIN tags t ON at.tag_id = t.id
+  GROUP BY t.id, t.name, t.slug
+  ORDER BY count DESC
+  LIMIT tag_limit;
+$$ LANGUAGE SQL STABLE;
 
 -- Seed categories
 INSERT INTO categories (name, slug, description, color) VALUES

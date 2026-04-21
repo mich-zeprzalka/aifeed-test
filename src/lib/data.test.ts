@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-
-// Test the escapeIlike function by extracting its logic
-// (we can't import it directly since it's not exported, so we test the pattern)
-function escapeIlike(input: string): string {
-  return input.replace(/[%_\\]/g, (ch) => `\\${ch}`);
-}
+import { escapeIlike, sanitizeOrQuery, pluralize } from "@/lib/search-utils";
 
 describe("escapeIlike", () => {
   it("escapes % character", () => {
@@ -36,12 +31,20 @@ describe("escapeIlike", () => {
   });
 });
 
-// Test pluralization logic used in search page
-function pluralize(count: number): string {
-  if (count === 1) return "wynik";
-  if (count >= 2 && count <= 4) return "wyniki";
-  return "wyników";
-}
+describe("sanitizeOrQuery", () => {
+  it("strips PostgREST or-syntax punctuation", () => {
+    expect(sanitizeOrQuery("foo,bar")).toBe("foo bar");
+    expect(sanitizeOrQuery("foo(bar)")).toBe("foo bar ");
+  });
+
+  it("still escapes ilike metacharacters", () => {
+    expect(sanitizeOrQuery("50%_off")).toBe("50\\%\\_off");
+  });
+
+  it("escapes metacharacters even when paired with punctuation", () => {
+    expect(sanitizeOrQuery("foo%,bar_")).toBe("foo\\% bar\\_");
+  });
+});
 
 describe("pluralize (search results)", () => {
   it("returns singular for 1", () => {

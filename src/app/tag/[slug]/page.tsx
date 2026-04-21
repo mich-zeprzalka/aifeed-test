@@ -4,6 +4,7 @@ import { ArticleCard } from "@/components/articles/article-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getTagBySlug, getArticlesByTag } from "@/lib/data";
 import { siteConfig } from "@/config/site";
+import { jsonLdScript } from "@/lib/jsonld";
 import type { Metadata } from "next";
 
 export const revalidate = 300;
@@ -55,7 +56,7 @@ export default async function TagPage({ params }: PageProps) {
     {collectionJsonLd && (
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(collectionJsonLd) }}
       />
     )}
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

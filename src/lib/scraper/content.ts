@@ -1,10 +1,43 @@
 /**
+ * Reject fetches targeting localhost or RFC1918/loopback ranges (SSRF hardening).
+ * RSS feeds shouldn't resolve to internal hosts; if they do, abort before fetch.
+ */
+function isInternalHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  if (h === "localhost" || h.endsWith(".localhost")) return true;
+  if (h === "0.0.0.0") return true;
+  if (/^127\./.test(h)) return true;
+  if (/^10\./.test(h)) return true;
+  if (/^192\.168\./.test(h)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  if (/^169\.254\./.test(h)) return true; // link-local / AWS metadata
+  if (h === "::1" || h.startsWith("[::1]") || h.startsWith("fc") || h.startsWith("fd")) return true;
+  return false;
+}
+
+/**
  * Scrapes the full text content of a source article from its URL.
  * Used to provide the AI writer with actual source material
  * instead of just an RSS title/snippet — preventing hallucinations.
  */
 export async function scrapeArticleContent(url: string): Promise<string> {
   try {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      console.warn(`[Content Scraper] Invalid URL: ${url}`);
+      return "";
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      console.warn(`[Content Scraper] Rejecting non-HTTP protocol: ${parsed.protocol}`);
+      return "";
+    }
+    if (isInternalHost(parsed.hostname)) {
+      console.warn(`[Content Scraper] Rejecting internal host: ${parsed.hostname}`);
+      return "";
+    }
+
     const res = await fetch(url, {
       headers: {
         "User-Agent":

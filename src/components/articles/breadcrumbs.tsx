@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
+import { jsonLdScript } from "@/lib/jsonld";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -35,7 +36,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
       <Breadcrumb>
         <BreadcrumbList className="text-[12px] font-mono text-muted-foreground/70">

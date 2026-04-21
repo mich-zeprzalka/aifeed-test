@@ -6,7 +6,9 @@ import { Footer } from "@/components/layout/footer";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
 import { siteConfig } from "@/config/site";
 import { getTickerArticles } from "@/lib/data";
+import { jsonLdScript } from "@/lib/jsonld";
 import { GoogleAnalytics } from '@next/third-parties/google';
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -90,7 +92,7 @@ export default async function RootLayout({
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationJsonLd) }}
         />
       </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground">
@@ -105,6 +107,7 @@ export default async function RootLayout({
         <Header />
         <main id="main-content" className="flex-1">{children}</main>
         <GoogleAnalytics gaId="G-5SD17PTF0C" />
+        <Analytics />
         <Footer />
       </body>
     </html>

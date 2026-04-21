@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/articles/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getCategories, getCategoryBySlug, getArticlesByCategoryPaginated } from "@/lib/data";
 import { siteConfig } from "@/config/site";
+import { jsonLdScript } from "@/lib/jsonld";
 import type { Metadata } from "next";
 
 export const revalidate = 300;
@@ -15,7 +16,7 @@ const PAGE_SIZE = 12;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ cursor?: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -33,17 +34,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CategoryPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const { cursor } = await searchParams;
+  const { page: pageParam } = await searchParams;
+  const pageNum = Math.max(1, parseInt(pageParam || "1", 10) || 1);
 
   const [category, categories, paginated] = await Promise.all([
     getCategoryBySlug(slug),
     getCategories(),
-    getArticlesByCategoryPaginated(slug, PAGE_SIZE, cursor),
+    getArticlesByCategoryPaginated(slug, PAGE_SIZE, pageNum),
   ]);
 
   if (!category) notFound();
 
-  const { articles, nextCursor, total } = paginated;
+  const { articles, page, totalPages, total, hasPrev, hasNext } = paginated;
 
   const itemListJsonLd = articles.length > 0 ? {
     "@context": "https://schema.org",
@@ -63,7 +65,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       {itemListJsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(itemListJsonLd) }}
         />
       )}
       <CategoryBar categories={categories} />
@@ -104,10 +106,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
             <Pagination
               basePath={`/category/${slug}`}
-              nextCursor={nextCursor}
-              hasPrev={!!cursor}
+              page={page}
+              totalPages={totalPages}
               total={total}
-              pageSize={PAGE_SIZE}
+              hasPrev={hasPrev}
+              hasNext={hasNext}
             />
           </>
         ) : (

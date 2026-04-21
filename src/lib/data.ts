@@ -1,27 +1,24 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Article, Category, Tag } from "@/types/database";
+import { sanitizeOrQuery } from "@/lib/search-utils";
 
 // ----- Supabase client (read-only, anon key) -----
 // Uses anon key (not server.ts cookie client) because all data access here is
-// public read-only — no RLS row ownership needed. The singleton avoids creating
-// a new client per request while still benefiting from connection pooling.
-function getSupabase() {
+// public read-only — no RLS row ownership needed. Lazy singleton — constructed
+// on first use so importing this module doesn't require env vars at build time.
+let _client: SupabaseClient | null = null;
+function db(): SupabaseClient {
+  if (_client) return _client;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Missing Supabase environment variables");
-  return createClient(url, key);
+  _client = createClient(url, key);
+  return _client;
 }
-
-const supabase = getSupabase();
 
 export type ArticleWithRelations = Article & { category: Category | null; tags: Tag[] };
 
 // ===================== BATCH HELPERS =====================
-
-/** Escape special characters for PostgREST ilike */
-function escapeIlike(input: string): string {
-  return input.replace(/[%_\\]/g, (ch) => `\\${ch}`);
-}
 
 /** Attach tags to multiple articles in a single query (eliminates N+1) */
 async function attachTagsBatch(
@@ -30,7 +27,7 @@ async function attachTagsBatch(
   if (articles.length === 0) return [];
 
   const ids = articles.map((a) => a.id);
-  const { data: tagRows, error } = await supabase
+  const { data: tagRows, error } = await db()
     .from("article_tags")
     .select("article_id, tag:tags(*)")
     .in("article_id", ids);
@@ -64,7 +61,7 @@ async function attachTags(
 // ===================== DATA ACCESS =====================
 
 export async function getArticles(limit = 10): Promise<ArticleWithRelations[]> {
-  const { data: articles, error } = await supabase
+  const { data: articles, error } = await db()
     .from("articles")
     .select("*, category:categories(*)")
     .eq("is_published", true)
@@ -81,7 +78,7 @@ export async function getArticles(limit = 10): Promise<ArticleWithRelations[]> {
 }
 
 export async function getFeaturedArticles(): Promise<ArticleWithRelations[]> {
-  const { data: articles, error } = await supabase
+  const { data: articles, error } = await db()
     .from("articles")
     .select("*, category:categories(*)")
     .eq("is_published", true)
@@ -99,38 +96,45 @@ export async function getFeaturedArticles(): Promise<ArticleWithRelations[]> {
 }
 
 export async function getArticleBySlug(slug: string): Promise<ArticleWithRelations | null> {
-  const { data: article, error } = await supabase
+  const { data: article, error } = await db()
     .from("articles")
     .select("*, category:categories(*)")
     .eq("slug", slug)
     .eq("is_published", true)
-    .single();
+    .maybeSingle();
 
-  if (error || !article) {
-    if (error && error.code !== "PGRST116") {
-      console.error("[data] getArticleBySlug failed:", error.message);
-    }
+  if (error) {
+    console.error("[data] getArticleBySlug failed:", error.message);
     return null;
   }
+  if (!article) return null;
 
   return attachTags(article);
 }
 
-export async function getArticlesByCategory(categorySlug: string): Promise<ArticleWithRelations[]> {
-  const { data: category, error: catError } = await supabase
+/**
+ * Fetch articles for a category (non-paginated). Bounded by `limit` to
+ * prevent unbounded responses as the dataset grows.
+ */
+export async function getArticlesByCategory(
+  categorySlug: string,
+  limit = 50
+): Promise<ArticleWithRelations[]> {
+  const { data: category, error: catError } = await db()
     .from("categories")
     .select("id")
     .eq("slug", categorySlug)
-    .single();
+    .maybeSingle();
 
   if (catError || !category) return [];
 
-  const { data: articles, error } = await supabase
+  const { data: articles, error } = await db()
     .from("articles")
     .select("*, category:categories(*)")
     .eq("is_published", true)
     .eq("category_id", category.id)
-    .order("published_at", { ascending: false });
+    .order("published_at", { ascending: false })
+    .limit(limit);
 
   if (error) {
     console.error("[data] getArticlesByCategory failed:", error.message);
@@ -143,65 +147,79 @@ export async function getArticlesByCategory(categorySlug: string): Promise<Artic
 
 export interface PaginatedResult {
   articles: ArticleWithRelations[];
-  nextCursor: string | null;
-  prevCursor: string | null;
+  page: number;
+  pageSize: number;
   total: number;
+  totalPages: number;
+  hasPrev: boolean;
+  hasNext: boolean;
 }
 
+/**
+ * Offset-based pagination for category listings. Uses page numbers so that
+ * "Previous" navigates to `page - 1` (not back to page 1 like the previous
+ * cursor-only scheme).
+ */
 export async function getArticlesByCategoryPaginated(
   categorySlug: string,
   pageSize = 12,
-  cursor?: string,
+  page = 1,
 ): Promise<PaginatedResult> {
-  const { data: category, error: catError } = await supabase
+  const safePage = Math.max(1, Math.floor(page) || 1);
+
+  const { data: category, error: catError } = await db()
     .from("categories")
     .select("id")
     .eq("slug", categorySlug)
-    .single();
+    .maybeSingle();
 
-  if (catError || !category) return { articles: [], nextCursor: null, prevCursor: null, total: 0 };
+  if (catError || !category) {
+    return { articles: [], page: safePage, pageSize, total: 0, totalPages: 0, hasPrev: false, hasNext: false };
+  }
 
-  const { count } = await supabase
+  const { count } = await db()
     .from("articles")
     .select("*", { count: "exact", head: true })
     .eq("is_published", true)
     .eq("category_id", category.id);
 
-  let query = supabase
+  const total = count || 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const from = (safePage - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  if (total === 0 || from >= total) {
+    return { articles: [], page: safePage, pageSize, total, totalPages, hasPrev: safePage > 1, hasNext: false };
+  }
+
+  const { data: articles, error } = await db()
     .from("articles")
     .select("*, category:categories(*)")
     .eq("is_published", true)
     .eq("category_id", category.id)
     .order("published_at", { ascending: false })
-    .limit(pageSize + 1);
+    .range(from, to);
 
-  if (cursor) {
-    query = query.lt("published_at", cursor);
+  if (error || !articles || articles.length === 0) {
+    if (error) console.error("[data] getArticlesByCategoryPaginated failed:", error.message);
+    return { articles: [], page: safePage, pageSize, total, totalPages, hasPrev: safePage > 1, hasNext: false };
   }
 
-  const { data: articles, error } = await query;
-  if (error) {
-    console.error("[data] getArticlesByCategoryPaginated failed:", error.message);
-    return { articles: [], nextCursor: null, prevCursor: null, total: count || 0 };
-  }
-  if (!articles || articles.length === 0) {
-    return { articles: [], nextCursor: null, prevCursor: null, total: count || 0 };
-  }
-
-  const hasMore = articles.length > pageSize;
-  const pageArticles = articles.slice(0, pageSize);
-  const withTags = await attachTagsBatch(pageArticles);
+  const withTags = await attachTagsBatch(articles);
 
   return {
     articles: withTags,
-    nextCursor: hasMore ? pageArticles[pageArticles.length - 1].published_at : null,
-    prevCursor: cursor || null,
-    total: count || 0,
+    page: safePage,
+    pageSize,
+    total,
+    totalPages,
+    hasPrev: safePage > 1,
+    hasNext: safePage < totalPages,
   };
 }
 
 export async function getCategories(): Promise<Category[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from("categories")
     .select("*")
     .order("name");
@@ -214,23 +232,28 @@ export async function getCategories(): Promise<Category[]> {
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from("categories")
     .select("*")
     .eq("slug", slug)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return null;
+  if (error) {
+    console.error("[data] getCategoryBySlug failed:", error.message);
+    return null;
+  }
   return data;
 }
 
 export async function searchArticles(query: string): Promise<ArticleWithRelations[]> {
-  const escaped = escapeIlike(query);
-  const { data: articles, error } = await supabase
+  const safe = sanitizeOrQuery(query);
+  if (!safe.trim()) return [];
+
+  const { data: articles, error } = await db()
     .from("articles")
     .select("*, category:categories(*)")
     .eq("is_published", true)
-    .or(`title.ilike.%${escaped}%,excerpt.ilike.%${escaped}%`)
+    .or(`title.ilike.%${safe}%,excerpt.ilike.%${safe}%`)
     .order("published_at", { ascending: false })
     .limit(20);
 
@@ -251,7 +274,7 @@ export async function getArticlesGroupedByCategory(
   categorySlugs: string[],
   limitPerCategory = 4
 ): Promise<Record<string, ArticleWithRelations[]>> {
-  const { data: categories, error: catError } = await supabase
+  const { data: categories, error: catError } = await db()
     .from("categories")
     .select("id, slug")
     .in("slug", categorySlugs);
@@ -261,12 +284,17 @@ export async function getArticlesGroupedByCategory(
   const categoryIds = categories.map((c) => c.id);
   const slugById = new Map(categories.map((c) => [c.id, c.slug]));
 
-  const { data: articles, error } = await supabase
+  // Bounded pull: at most N categories × 10× per-category limit — plenty of
+  // headroom to fill the per-category quota without scanning the whole table.
+  const pullLimit = Math.max(categoryIds.length * limitPerCategory * 10, 200);
+
+  const { data: articles, error } = await db()
     .from("articles")
     .select("*, category:categories(*)")
     .eq("is_published", true)
     .in("category_id", categoryIds)
-    .order("published_at", { ascending: false });
+    .order("published_at", { ascending: false })
+    .limit(pullLimit);
 
   if (error || !articles || articles.length === 0) return {};
 
@@ -298,52 +326,50 @@ export async function getArticlesGroupedByCategory(
 
 /**
  * Fetch popular tags ranked by usage count.
- * Uses a lightweight query fetching only junction rows + embedded tag data.
- * Ideal: replace with Supabase RPC using SQL GROUP BY for server-side aggregation.
+ * Prefers the Supabase RPC `popular_tags(tag_limit)` (server-side GROUP BY).
+ * Falls back to in-memory aggregation if the RPC is missing (older DBs).
  */
 export async function getPopularTags(limit = 10): Promise<Tag[]> {
-  // Step 1: Count tag usage via junction table (lightweight — only tag_id column)
-  const { data: countRows, error: countError } = await supabase
+  const rpc = await db().rpc("popular_tags", { tag_limit: limit });
+  if (!rpc.error && Array.isArray(rpc.data)) {
+    return rpc.data.map((row: { id: string; name: string; slug: string }) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+    }));
+  }
+
+  // Fallback — only runs when the RPC hasn't been deployed yet.
+  console.warn("[data] getPopularTags RPC missing, falling back to in-memory aggregate");
+  const { data: countRows, error: countError } = await db()
     .from("article_tags")
     .select("tag_id");
 
-  if (countError) {
-    console.error("[data] getPopularTags count failed:", countError.message);
-    return [];
-  }
-  if (!countRows || countRows.length === 0) return [];
+  if (countError || !countRows || countRows.length === 0) return [];
 
-  // Aggregate counts in memory
   const countMap = new Map<string, number>();
   for (const row of countRows) {
     countMap.set(row.tag_id, (countMap.get(row.tag_id) || 0) + 1);
   }
 
-  // Step 2: Get top N tag IDs
   const topTagIds = [...countMap.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
     .map(([id]) => id);
 
-  // Step 3: Fetch only the tags we need (not all joined data)
-  const { data: tags, error: tagError } = await supabase
+  const { data: tags, error: tagError } = await db()
     .from("tags")
     .select("id, name, slug")
     .in("id", topTagIds);
 
-  if (tagError) {
-    console.error("[data] getPopularTags tags failed:", tagError.message);
-    return [];
-  }
-  if (!tags) return [];
+  if (tagError || !tags) return [];
 
-  // Preserve ranking order
   const tagMap = new Map(tags.map((t) => [t.id, t as Tag]));
   return topTagIds.map((id) => tagMap.get(id)).filter(Boolean) as Tag[];
 }
 
 export async function getSitemapArticles(limit = 5000): Promise<{ slug: string; updated_at: string; is_featured: boolean }[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from("articles")
     .select("slug, updated_at, is_featured")
     .eq("is_published", true)
@@ -358,7 +384,7 @@ export async function getSitemapArticles(limit = 5000): Promise<{ slug: string; 
 }
 
 export async function getTickerArticles(limit = 10): Promise<{ title: string; slug: string }[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from("articles")
     .select("title, slug")
     .eq("is_published", true)
@@ -375,21 +401,24 @@ export async function getTickerArticles(limit = 10): Promise<{ title: string; sl
 // ===================== TAG PAGES =====================
 
 export async function getTagBySlug(slug: string): Promise<Tag | null> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from("tags")
     .select("*")
     .eq("slug", slug)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return null;
+  if (error) {
+    console.error("[data] getTagBySlug failed:", error.message);
+    return null;
+  }
   return data;
 }
 
-export async function getArticlesByTag(tagSlug: string): Promise<ArticleWithRelations[]> {
+export async function getArticlesByTag(tagSlug: string, limit = 50): Promise<ArticleWithRelations[]> {
   const tag = await getTagBySlug(tagSlug);
   if (!tag) return [];
 
-  const { data: articleTagRows, error: atError } = await supabase
+  const { data: articleTagRows, error: atError } = await db()
     .from("article_tags")
     .select("article_id")
     .eq("tag_id", tag.id);
@@ -398,12 +427,13 @@ export async function getArticlesByTag(tagSlug: string): Promise<ArticleWithRela
 
   const articleIds = articleTagRows.map((r) => r.article_id);
 
-  const { data: articles, error } = await supabase
+  const { data: articles, error } = await db()
     .from("articles")
     .select("*, category:categories(*)")
     .eq("is_published", true)
     .in("id", articleIds)
-    .order("published_at", { ascending: false });
+    .order("published_at", { ascending: false })
+    .limit(limit);
 
   if (error || !articles || articles.length === 0) return [];
 
@@ -432,8 +462,7 @@ export async function getAdjacentArticles(
   publishedAt: string
 ): Promise<AdjacentArticles> {
   const [prevResult, nextResult] = await Promise.all([
-    // Older article (previous)
-    supabase
+    db()
       .from("articles")
       .select("slug, title")
       .eq("is_published", true)
@@ -442,9 +471,8 @@ export async function getAdjacentArticles(
       .lt("published_at", publishedAt)
       .order("published_at", { ascending: false })
       .limit(1)
-      .single(),
-    // Newer article (next)
-    supabase
+      .maybeSingle(),
+    db()
       .from("articles")
       .select("slug, title")
       .eq("is_published", true)
@@ -453,7 +481,7 @@ export async function getAdjacentArticles(
       .gt("published_at", publishedAt)
       .order("published_at", { ascending: true })
       .limit(1)
-      .single(),
+      .maybeSingle(),
   ]);
 
   return {
@@ -465,7 +493,7 @@ export async function getAdjacentArticles(
 // ===================== ALL TAGS (for sitemap) =====================
 
 export async function getAllTags(): Promise<Tag[]> {
-  const { data, error } = await supabase
+  const { data, error } = await db()
     .from("tags")
     .select("*")
     .order("name");

@@ -6,12 +6,7 @@ import { Search as SearchIcon, FileQuestion } from "lucide-react";
 import { ArticleCard } from "@/components/articles/article-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { ArticleWithRelations } from "@/lib/data";
-
-function pluralize(count: number): string {
-  if (count === 1) return "wynik";
-  if (count >= 2 && count <= 4) return "wyniki";
-  return "wyników";
-}
+import { pluralize, SEARCH_QUERY_MAX_LENGTH } from "@/lib/search-utils";
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -72,6 +67,7 @@ export default function SearchPage() {
             placeholder="Szukaj newsów AI, modeli, badań..."
             value={query}
             onChange={handleChange}
+            maxLength={SEARCH_QUERY_MAX_LENGTH}
             className="w-full h-10 rounded-lg border border-border bg-card pl-10 pr-4 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
             autoFocus
           />

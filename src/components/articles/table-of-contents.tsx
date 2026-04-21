@@ -1,18 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
+import { slugifyHeading } from "@/lib/heading-id";
 
 interface TocItem {
   id: string;
   text: string;
   level: number;
-}
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
 }
 
 function extractHeadings(markdown: string): TocItem[] {
@@ -22,7 +16,7 @@ function extractHeadings(markdown: string): TocItem[] {
     if (match) {
       const level = match[1].length;
       const text = match[2].trim();
-      headings.push({ id: slugify(text), text, level });
+      headings.push({ id: slugifyHeading(text), text, level });
     }
   }
   return headings;

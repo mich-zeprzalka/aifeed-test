@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -88,11 +88,7 @@ export async function POST(request: NextRequest) {
           const sourceContent = await scrapeArticleContent(sources[0]);
           const article = await generateArticle(topic, sources, [topic], sourceContent);
 
-          const thumbnail = await getArticleThumbnail(
-            article.title,
-            sources[0],
-            topic.split("—")[0].trim()
-          );
+          const thumbnail = await getArticleThumbnail(article.title, sources[0]);
 
           const slug =
             slugify(article.title, { lower: true, strict: true, locale: "pl" })

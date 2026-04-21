@@ -12,6 +12,7 @@ import {
   getArticlesGroupedByCategory,
   getPopularTags,
 } from "@/lib/data";
+import { jsonLdScript } from "@/lib/jsonld";
 
 import { Metadata } from "next";
 
@@ -263,7 +264,7 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: jsonLdScript({
             "@context": "https://schema.org",
             "@type": "WebSite",
             name: siteConfig.name,

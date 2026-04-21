@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { searchArticles } from "@/lib/data";
 import { rateLimit } from "@/lib/rate-limit";
+import { SEARCH_QUERY_MAX_LENGTH } from "@/lib/search-utils";
 
 const RATE_LIMIT = { limit: 30, windowMs: 60_000 }; // 30 req/min per IP
 
@@ -24,13 +25,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const query = request.nextUrl.searchParams.get("q") || "";
+  const query = (request.nextUrl.searchParams.get("q") || "").trim();
 
-  if (!query.trim()) {
-    return Response.json([]);
-  }
+  if (!query) return Response.json([]);
+  if (query.length > SEARCH_QUERY_MAX_LENGTH) return Response.json([]);
 
-  const results = await searchArticles(query.trim());
+  const results = await searchArticles(query);
   return Response.json(results, {
     headers: { "X-RateLimit-Remaining": String(remaining) },
   });

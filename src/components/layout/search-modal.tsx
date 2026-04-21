@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SEARCH_QUERY_MAX_LENGTH } from "@/lib/search-utils";
 
 interface SearchResult {
   id: string;
@@ -86,6 +87,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
               className="flex-1 bg-transparent border-none outline-none text-base placeholder:text-muted-foreground"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              maxLength={SEARCH_QUERY_MAX_LENGTH}
               autoFocus
             />
             {loading && <Loader2 className="size-4 animate-spin text-muted-foreground ml-3 shrink-0" />}
@@ -123,7 +125,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           ) : !loading && query.trim() !== "" ? (
             <div className="px-6 py-10 text-center">
               <p className="text-sm text-muted-foreground">
-                Brak wyników dla "{query}". Spróbuj inaczej.
+                Brak wyników dla &quot;{query}&quot;. Spróbuj inaczej.
               </p>
             </div>
           ) : null}
