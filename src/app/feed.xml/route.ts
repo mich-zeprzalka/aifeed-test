@@ -3,45 +3,79 @@ import { siteConfig } from "@/config/site";
 
 export const revalidate = 3600;
 
+// Escape XML special characters — critical for URLs containing `&`.
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+// Wrap text fields with CDATA — the `]]>` sequence must be split to stay safe.
+function cdata(value: string): string {
+  return `<![CDATA[${value.replace(/\]\]>/g, "]]]]><![CDATA[>")}]]>`;
+}
+
+function inferImageMimeType(url: string): string {
+  const clean = url.split("?")[0].toLowerCase();
+  if (clean.endsWith(".png")) return "image/png";
+  if (clean.endsWith(".webp")) return "image/webp";
+  if (clean.endsWith(".gif")) return "image/gif";
+  if (clean.endsWith(".avif")) return "image/avif";
+  if (clean.endsWith(".svg")) return "image/svg+xml";
+  return "image/jpeg";
+}
+
 export async function GET() {
   const articles = await getArticles(50);
   const baseUrl = siteConfig.url;
 
+  const items = articles
+    .map((a) => {
+      const articleUrl = escapeXml(`${baseUrl}/article/${a.slug}`);
+      const pubDate = a.published_at ? new Date(a.published_at).toUTCString() : "";
+      const categoryTag = a.category
+        ? `\n    <category>${escapeXml(a.category.name)}</category>`
+        : "";
+      const enclosureTag = a.thumbnail_url
+        ? `\n    <enclosure url="${escapeXml(a.thumbnail_url)}" type="${inferImageMimeType(a.thumbnail_url)}" length="0"/>`
+        : "";
+
+      return `<item>
+    <title>${cdata(a.title)}</title>
+    <link>${articleUrl}</link>
+    <description>${cdata(a.excerpt)}</description>
+    <pubDate>${pubDate}</pubDate>
+    <guid isPermaLink="true">${articleUrl}</guid>
+    <dc:creator>AiFeed</dc:creator>${categoryTag}${enclosureTag}
+  </item>`;
+    })
+    .join("\n  ");
+
   const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
 <channel>
-  <title>${siteConfig.name}</title>
-  <link>${baseUrl}</link>
-  <description>${siteConfig.description}</description>
-  <language>pl</language>
+  <title>${escapeXml(siteConfig.name)}</title>
+  <link>${escapeXml(baseUrl)}</link>
+  <description>${cdata(siteConfig.description)}</description>
+  <language>pl-PL</language>
   <managingEditor>redakcja@aifeed.pl (AiFeed)</managingEditor>
-  <atom:link href="${baseUrl}/feed.xml" rel="self" type="application/rss+xml"/>
+  <atom:link href="${escapeXml(`${baseUrl}/feed.xml`)}" rel="self" type="application/rss+xml"/>
   <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
   <image>
-    <url>${baseUrl}/icon.png</url>
-    <title>${siteConfig.name}</title>
-    <link>${baseUrl}</link>
+    <url>${escapeXml(`${baseUrl}/icon.png`)}</url>
+    <title>${escapeXml(siteConfig.name)}</title>
+    <link>${escapeXml(baseUrl)}</link>
   </image>
-  ${articles
-    .map(
-      (a) => `<item>
-    <title><![CDATA[${a.title}]]></title>
-    <link>${baseUrl}/article/${a.slug}</link>
-    <description><![CDATA[${a.excerpt}]]></description>
-    <pubDate>${a.published_at ? new Date(a.published_at).toUTCString() : ""}</pubDate>
-    <guid isPermaLink="true">${baseUrl}/article/${a.slug}</guid>
-    <dc:creator>AiFeed</dc:creator>${a.category ? `
-    <category>${a.category.name}</category>` : ""}${a.thumbnail_url ? `
-    <enclosure url="${a.thumbnail_url}" type="image/jpeg" length="0"/>` : ""}
-  </item>`
-    )
-    .join("\n  ")}
+  ${items}
 </channel>
 </rss>`;
 
   return new Response(rss, {
     headers: {
-      "Content-Type": "application/xml",
+      "Content-Type": "application/xml; charset=utf-8",
       "Cache-Control": "s-maxage=3600, stale-while-revalidate",
     },
   });

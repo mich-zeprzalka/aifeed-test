@@ -166,26 +166,6 @@
   @apply px-4 sm:px-6 lg:px-8;
 }
 
-@utility animate-marquee {
-  animation: marquee 60s linear infinite;
-  display: inline-flex;
-  align-items: center;
-  will-change: transform;
-}
-
-@utility pause-on-hover {
-  @media (hover: hover) {
-    &:hover .animate-marquee {
-      animation-play-state: paused;
-    }
-  }
-}
-
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
-}
-
 /* ═══════════════════════════════════════════════
    TYPOGRAPHY
    ═══════════════════════════════════════════════ */
@@ -387,10 +367,6 @@ h6 {
   .animate-fade-in-up {
     animation: none !important;
     opacity: 1 !important;
-  }
-
-  .animate-marquee {
-    animation: none !important;
   }
 
   * {
