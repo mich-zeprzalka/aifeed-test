@@ -22,10 +22,30 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const category = await getCategoryBySlug(slug);
-  if (!category) return { title: "Kategoria nie znaleziona" };
+  if (!category) {
+    return {
+      title: "Kategoria nie znaleziona",
+      robots: { index: false, follow: false },
+    };
+  }
+  const description = `Najnowsze artykuły w kategorii ${category.name} — ${category.description || "wiadomości, analizy i raporty AI"}. Czytaj na AiFeed.`;
   return {
     title: `${category.name} — AiFeed`,
-    description: `Najnowsze artykuły w kategorii ${category.name} — ${category.description || "wiadomości, analizy i raporty AI"}. Czytaj na AiFeed.`,
+    description,
+    openGraph: {
+      title: `${category.name} — AiFeed`,
+      description,
+      type: "website",
+      url: `${siteConfig.url}/category/${category.slug}`,
+      siteName: siteConfig.name,
+      locale: "pl_PL",
+      images: [{ url: siteConfig.ogImage, width: 1200, height: 630, alt: siteConfig.name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${category.name} — AiFeed`,
+      description,
+    },
     alternates: {
       canonical: `/category/${category.slug}`,
     },

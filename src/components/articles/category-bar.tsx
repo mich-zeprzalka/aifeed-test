@@ -46,20 +46,21 @@ export function CategoryBar({ categories }: CategoryBarProps) {
     };
   }, []);
 
+  // Use nav + aria-current="page" rather than role="tablist"/role="tab".
+  // Tabs imply an ARIA-associated tabpanel; these links navigate to a new
+  // route, which is nav semantics, not tabs.
   return (
     <nav aria-label="Kategorie" className="border-b border-border/40 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div
           ref={scrollerRef}
-          role="tablist"
           className="no-scrollbar flex items-center gap-2 overflow-x-auto py-3"
         >
           <Link
             href="/"
-            role="tab"
-            aria-selected={isHome && !activeSlug}
+            aria-current={isHome ? "page" : undefined}
             className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              isHome && !activeSlug
+              isHome
                 ? "bg-foreground text-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
@@ -72,8 +73,7 @@ export function CategoryBar({ categories }: CategoryBarProps) {
               <Link
                 key={cat.slug}
                 href={`/category/${cat.slug}`}
-                role="tab"
-                aria-selected={isActive}
+                aria-current={isActive ? "page" : undefined}
                 className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-foreground text-background"

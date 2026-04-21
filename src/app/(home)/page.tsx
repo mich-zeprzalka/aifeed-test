@@ -241,7 +241,7 @@ export default async function HomePage() {
               {[
                 { icon: Newspaper, value: "50+", label: "Artykułów tygodniowo" },
                 { icon: Layers, value: "6", label: "Kategorii tematycznych" },
-                { icon: Rss, value: "10+", label: "Źródeł RSS" },
+                { icon: Rss, value: "20", label: "Źródeł RSS" },
                 { icon: Zap, value: "24/7", label: "Automatyczny pipeline" },
               ].map((stat) => (
                 <div

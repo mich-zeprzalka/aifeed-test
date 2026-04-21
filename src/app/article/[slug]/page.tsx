@@ -27,22 +27,46 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const article = await getCachedArticle(slug);
-  if (!article) return { title: "Artykuł nie znaleziony" };
+  if (!article) {
+    return {
+      title: "Artykuł nie znaleziony",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  // Google recommends providing explicit OG image dimensions so crawlers don't
+  // have to fetch the image to determine size. 1200×630 is the universal
+  // recommendation for `summary_large_image`.
+  const ogImage = article.thumbnail_url
+    ? { url: article.thumbnail_url, width: 1200, height: 630, alt: article.title }
+    : { url: siteConfig.ogImage, width: 1200, height: 630, alt: siteConfig.name };
+
+  const tagNames = article.tags.map((t) => t.name);
 
   return {
     title: article.title,
     description: article.excerpt,
+    keywords: tagNames.length > 0 ? tagNames : undefined,
+    authors: [{ name: siteConfig.name, url: siteConfig.url }],
     openGraph: {
       title: article.title,
       description: article.excerpt,
       type: "article",
+      url: `${siteConfig.url}/article/${article.slug}`,
+      siteName: siteConfig.name,
+      locale: "pl_PL",
       publishedTime: article.published_at || undefined,
-      images: article.thumbnail_url ? [{ url: article.thumbnail_url }] : [{ url: siteConfig.ogImage }],
+      modifiedTime: article.updated_at || article.published_at || undefined,
+      authors: [siteConfig.url],
+      section: article.category?.name,
+      tags: tagNames,
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title: article.title,
       description: article.excerpt,
+      images: [ogImage.url],
     },
     alternates: {
       canonical: `/article/${article.slug}`,
@@ -83,15 +107,22 @@ export default async function ArticlePage({ params }: PageProps) {
     { label: article.title },
   ];
 
+  // NewsArticle JSON-LD — Google's News structured data spec.
+  // `image` as an array of URLs (recommended over a single string), skipped
+  // entirely when no thumbnail is available (better than an empty field).
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
-    headline: article.title,
+    headline: article.title.slice(0, 110), // Google caps headline at 110 chars
     description: article.excerpt,
-    image: article.thumbnail_url || undefined,
+    ...(article.thumbnail_url && { image: [article.thumbnail_url] }),
     datePublished: article.published_at,
-    dateModified: article.updated_at,
-    author: { "@type": "Organization", name: siteConfig.name, url: siteConfig.url },
+    dateModified: article.updated_at || article.published_at,
+    author: {
+      "@type": "Organization",
+      name: siteConfig.name,
+      url: siteConfig.url,
+    },
     publisher: {
       "@type": "Organization",
       name: siteConfig.name,
@@ -99,7 +130,10 @@ export default async function ArticlePage({ params }: PageProps) {
       logo: { "@type": "ImageObject", url: `${siteConfig.url}/icon.png` },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
-    keywords: article.tags.map((t) => t.name).join(", "),
+    ...(article.tags.length > 0 && { keywords: article.tags.map((t) => t.name).join(", ") }),
+    inLanguage: "pl-PL",
+    isAccessibleForFree: true,
+    ...(article.category?.name && { articleSection: article.category.name }),
   };
 
   return (

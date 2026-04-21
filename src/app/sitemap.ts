@@ -50,12 +50,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.3,
     },
-    {
-      url: `${baseUrl}/search`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.5,
-    },
+    // /search intentionally omitted — it's noindex'd (thin content) and has
+    // no standalone value as a discoverable URL.
     ...categoryUrls,
     ...tagUrls,
     ...articleUrls,

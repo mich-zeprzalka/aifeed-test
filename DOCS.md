@@ -429,12 +429,12 @@ Próg odrzucenia: score < 50.
 | `/article/[slug]` | Server | 60s | Breadcrumbs + TOC + prose-article + share + adjacent + related; `NewsArticle` JSON-LD |
 | `/category/[slug]?page=N` | Server | 300s | Offset-based pagination, `rel=prev/next`, `ItemList` JSON-LD |
 | `/tag/[slug]` | Server | 300s | `CollectionPage` + `ItemList` JSON-LD, limit 50 |
-| `/search` | Client | — | Debounce 300ms, `maxLength=100`, `?q=` initial |
+| `/search` | Client + `layout.tsx` z metadata | — | Debounce 300ms, `maxLength=100`, `?q=` initial. **Noindex** (`robots: index:false`), wyłączone z sitemap, disallowed w `robots.txt` — chroni SERP przed cienką treścią z `?q=…` |
 | `/about` | Server (static) | — | canonical `/about` |
 | `/privacy` | Server (static) | — | canonical `/privacy` |
 | `/feed.xml` | Route handler | 3600s | RSS 2.0 z CDATA + escape XML + `<atom:link rel="self">` |
-| `/sitemap.xml` | Metadata route | — | Articles (priority 0.9/0.7) + categories (0.8) + tags (0.5) + static |
-| `/robots.txt` | Metadata route | — | `Allow: /`, `Disallow: /api/`, `/admin/` |
+| `/sitemap.xml` | Metadata route | — | Articles (priority 0.9/0.7) + categories (0.8) + tags (0.5) + `/`, `/about`, `/privacy` |
+| `/robots.txt` | Metadata route | — | `Allow: /`, `Disallow: /api/`, `/admin/`, `/search` |
 | `/manifest.webmanifest` | Metadata route | — | PWA manifest, `lang: pl` |
 
 ### Skróty klawiszowe
@@ -449,11 +449,11 @@ Próg odrzucenia: score < 50.
 
 | Komponent | Typ | Odpowiedzialność |
 |---|---|---|
-| `Header` | client | Sticky nav, logo, search trigger, theme toggle, mobile drawer, Ctrl+K/`/` keyboard handler |
-| `NewsTicker` | client | Marquee na WAAPI (`Element.animate()`) — nieodbinderowany od nawigacji |
+| `Header` | client | Sticky nav, logo (klik na `/` → smooth scroll-to-top), search trigger, theme toggle, mobile drawer z `Wszystko` + kategoriami, Ctrl+K/`/` keyboard handler, `aria-current="page"` dla aktywnej trasy |
+| `NewsTicker` | client | Marquee na WAAPI (`Element.animate()`). `memo` z compare po slugach + `ResizeObserver` + `document.fonts.ready` — nieprzerwany przy nawigacji, odporny na font swap |
 | `Footer` | server | Branding, kategorie, linki, newsletter |
 | `NewsletterForm` | client | POST /api/newsletter, states idle/loading/success/error |
-| `ScrollToTop` | client | Floating button + reset scroll na route change |
+| `ScrollToTop` | client | `useLayoutEffect` z `behavior: "instant"` na route change (bez flicker "w połowie → top"). Hash anchors pomijane (browser skroluje do targetu). Floating button z `scrollTo({behavior: "smooth"})` |
 | `SearchModal` | client | Debounce 400ms, abort-aware fetch, `maxLength=100` |
 | `ThemeToggle` | client | `useSyncExternalStore` + MutationObserver na `html.class` |
 
@@ -461,9 +461,9 @@ Próg odrzucenia: score < 50.
 
 | Komponent | Typ | Uwagi |
 |---|---|---|
-| `ArticleCard` | server | 3 warianty: default / featured / compact |
+| `ArticleCard` | server | 3 warianty: `default` (`<h3>`) / `featured` (`<h2>`) / `compact` (`<h4>`) |
 | `Breadcrumbs` | server | + `BreadcrumbList` JSON-LD (przez `jsonLdScript`) |
-| `CategoryBar` | client | Scroll position persist w sessionStorage |
+| `CategoryBar` | client | `<nav aria-label="Kategorie">` z `aria-current="page"` na aktywnym linku. Scroll position persist w sessionStorage. "Wszystko" aktywne gdy `pathname === "/"` |
 | `ReadingProgress` | client | `role="progressbar"`, fixed top |
 | `ShareButtons` | client | X / LinkedIn / Facebook + copy + `navigator.share` (progressive) |
 | `TableOfContents` | client | Lista `#id` anchorów ze `slugifyHeading()` (ta sama funkcja co markdown renderer → spójne kotwice) |
@@ -500,19 +500,43 @@ Próg odrzucenia: score < 50.
 ### Motyw
 - Inline script w `<head>` przed hydratacją — czyta localStorage + `prefers-color-scheme`, zapobiega flash unstyled
 
+### Scroll behavior
+- **Brak globalnego `scroll-behavior: smooth`** w `html` — animowany scroll przy nawigacji dawał efekt "lądujemy w połowie i animujemy do góry". Zostało tylko `scroll-padding-top: 5rem` (anchor offset pod sticky header).
+- Programowy smooth scroll jest opt-in per-call: `ScrollToTop` button, logo klik na `/`.
+
 ---
 
 ## 12. SEO
 
-- **Metadata API** — title template, description, canonical per-page, OG, Twitter card, locale `pl_PL`
-- **JSON-LD** — `Organization` (layout), `WebSite` + SearchAction (home), `NewsArticle` (single), `BreadcrumbList` (breadcrumbs), `CollectionPage` + `ItemList` (tag), `ItemList` (category). Wszystko serializowane przez `jsonLdScript()` — escape `<`, `>`, `&`, U+2028, U+2029 (nie da się uciec przez `</script>` w tytule).
-- **Sitemap** z priorytetami (articles 0.9/0.7, categories 0.8, tags 0.5)
-- **RSS 2.0** z CDATA + escape XML, `<atom:link rel="self">`, enclosure z miniaturą i inferowanym MIME
+### Metadata API (`src/app/*/page.tsx`)
+- **Layout root** — title template (`%s | AiFeed`), locale `pl_PL`, `applicationName`, `authors`, `creator`, `publisher`, `category: technology`. `robots.googleBot` dopuszcza `max-image-preview: large`, `max-snippet: -1`. `formatDetection` blokuje auto-parsowanie telefonów/maili/adresów.
+- **`/article/[slug]`** — generowane `openGraph` z `type: "article"`, `publishedTime`, `modifiedTime`, `section` (kategoria), `tags`, `authors`. OG images z jawnymi `width: 1200, height: 630, alt`. Twitter `summary_large_image` z `images`. `keywords` z tagów. `robots: index:false, follow:false` gdy artykuł nie znaleziony.
+- **`/category/[slug]`, `/tag/[slug]`** — pełne `openGraph` + `twitter`, `canonical`, `robots: noindex` gdy brak wpisu.
+- **`/search`** — dedicated `layout.tsx` z `robots: index:false, follow:true`. Wyłączone z sitemap, disallowed w `robots.txt`.
+- **`/not-found`** — `robots: index:false, follow:true`.
+
+### JSON-LD
+Wszystko przez `jsonLdScript()` — escape `<`, `>`, `&`, U+2028, U+2029 (nie da się uciec przez `</script>` w stringowych wartościach).
+- **`Organization`** — w root layout (`name`, `url`, `logo`, `sameAs`)
+- **`WebSite`** z `SearchAction` — na home
+- **`NewsArticle`** — na single post. `headline` cropped do 110 znaków (Google cap), `image: [url]` tablica gdy jest thumbnail, `datePublished`/`dateModified`, `articleSection`, `keywords`, `inLanguage: "pl-PL"`, `isAccessibleForFree: true`, `author` + `publisher` jako `Organization`
+- **`BreadcrumbList`** — na każdej stronie z breadcrumbs
+- **`ItemList`** (category), **`CollectionPage` + `ItemList`** (tag)
+
+### Sitemap / RSS / Feed
+- **Sitemap** — articles (priority 0.9 featured / 0.7 pozostałe, changeFrequency weekly) + categories (0.8 daily) + tags (0.5 weekly) + `/`, `/about`, `/privacy`. `/search` celowo pominięty (noindex + thin content).
+- **RSS 2.0** — CDATA + escape XML, `<atom:link rel="self">`, enclosure z miniaturą i inferowanym MIME z extensji
+
+### Semantyka / a11y
 - **Heading anchors** zachowują polskie diakrytyki (`ą→a`, `ł→l`, …) przez `slugifyHeading()` — spójnie w renderze i TOC
 - **Pagination** z `rel=prev/next` na `/category/[slug]`
 - **Slugi artykułów** czytelne po polsku (retry `-2`, `-3`, …); timestamp doklejany tylko przy wyczerpaniu próbek
+- **Hierarchia nagłówków** — sr-only `<h1>` na home, eksplicytne `<h1>` na article/category/tag/about/privacy/search/404. Cards: `<h3>` (default), `<h2>` (featured), `<h4>` (compact)
+- **`aria-current="page"`** na aktywnych linkach nawigacji (Header, Mobile drawer, CategoryBar) zamiast role="tab" (które wymagało nie-istniejących tabpanels)
+- **Skip-link** `a href="#main-content"` w layout — pierwszy focusable element, widoczny przy tab
+- **`<main id="main-content">`** jako landmark w layout
 - **Reading time** + structured data
-- **404** strona z `<link rel="canonical">` ignorowanym
+- **404** strona z `robots: noindex, follow`
 - **`rel="nofollow noopener noreferrer"`** na share linkach
 
 ---
@@ -675,11 +699,11 @@ Zwraca `{message, generated[], rejected[], failed[{title,reason}], scraped, new}
 11. **`siteConfig.links` placeholdery** — `twitter: "https://twitter.com/aifeed"`, `github: "https://github.com/aifeed"` idą do `sameAs` w JSON-LD Organization. Jeśli konta nie istnieją, struktura jest formalnie nieprawidłowa. Decyzja: założyć konta albo usunąć `sameAs`.
 12. **`vercel.ts` zamiast `vercel.json`** — TypeScript config z `@vercel/config` (rekomendowane od 2026). Opcjonalne — JSON nadal działa.
 13. **Polskie źródła RSS** — Spider's Web / AntyWeb mają dużo szumu tech-general, filtr AI mitiguje ale można poszukać feedów dedykowanych AI/ML w PL.
-14. **NewsTicker fonts race** — `firstCopy.offsetWidth` czasem 0 przed załadowaniem fontów; dodać `document.fonts.ready` + `ResizeObserver`.
-15. **Ujednolicone error handling w `data.ts`** — wspólny helper `handleQuery<T>(result, fallback)` zamiast `if (error) { console.error; return ... }` w każdej funkcji.
-16. **Scalenie scroll listenerów** — `ReadingProgress` i `ScrollToTop` subskrybują osobne `scroll` eventy; można scalić przez wspólny hook.
-17. **Per-source RSS cap** — obecnie `slice(0, 10)` na każdym feedzie, bez priorytetyzacji "jeszcze nie widziane". TechCrunch w godzinach szczytu gubi itemy między triggerami.
-18. **`@vercel/speed-insights`** — `@vercel/analytics` jest, Speed Insights osobno (Core Web Vitals z RUM).
+14. **Ujednolicone error handling w `data.ts`** — wspólny helper `handleQuery<T>(result, fallback)` zamiast `if (error) { console.error; return ... }` w każdej funkcji.
+15. **Scalenie scroll listenerów** — `ReadingProgress` i `ScrollToTop` subskrybują osobne `scroll` eventy; można scalić przez wspólny hook.
+16. **Per-source RSS cap** — obecnie `slice(0, 10)` na każdym feedzie, bez priorytetyzacji "jeszcze nie widziane". TechCrunch w godzinach szczytu gubi itemy między triggerami.
+17. **`@vercel/speed-insights`** — `@vercel/analytics` jest, Speed Insights osobno (Core Web Vitals z RUM).
+18. **GA ID hardcoded** — `G-5SD17PTF0C` wstawiony bezpośrednio w `layout.tsx`. Przenieść do `NEXT_PUBLIC_GA_ID` dla elastyczności między środowiskami.
 
 ---
 

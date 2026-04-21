@@ -62,7 +62,7 @@ export default function AboutPage() {
               step: "01",
               title: "Monitorowanie źródeł RSS",
               description:
-                "Pipeline nieustannie skanuje ponad 10 kanałów RSS — blogi badawcze, portale technologiczne, repozytoria i oficjalne ogłoszenia firm AI.",
+                "Pipeline nieustannie skanuje 20 kanałów RSS — blogi badawcze, portale technologiczne, repozytoria arXiv i oficjalne ogłoszenia firm AI.",
             },
             {
               step: "02",
@@ -159,7 +159,7 @@ export default function AboutPage() {
           {[
             { icon: Newspaper, value: "50+", label: "Artykułów tygodniowo" },
             { icon: Layers, value: "6", label: "Kategorii tematycznych" },
-            { icon: Rss, value: "10+", label: "Źródeł RSS" },
+            { icon: Rss, value: "20", label: "Źródeł RSS" },
             { icon: Zap, value: "24/7", label: "Automatyczny monitoring" },
           ].map((stat) => (
             <div

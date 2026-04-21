@@ -16,10 +16,30 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const tag = await getTagBySlug(slug);
-  if (!tag) return { title: "Tag nie znaleziony" };
+  if (!tag) {
+    return {
+      title: "Tag nie znaleziony",
+      robots: { index: false, follow: false },
+    };
+  }
+  const description = `Najnowsze artykuły oznaczone tagiem #${tag.name} — wiadomości, analizy i raporty AI. Czytaj na AiFeed.`;
   return {
     title: `#${tag.name} — AiFeed`,
-    description: `Najnowsze artykuły oznaczone tagiem #${tag.name} — wiadomości, analizy i raporty AI. Czytaj na AiFeed.`,
+    description,
+    openGraph: {
+      title: `#${tag.name} — AiFeed`,
+      description,
+      type: "website",
+      url: `${siteConfig.url}/tag/${tag.slug}`,
+      siteName: siteConfig.name,
+      locale: "pl_PL",
+      images: [{ url: siteConfig.ogImage, width: 1200, height: 630, alt: siteConfig.name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `#${tag.name} — AiFeed`,
+      description,
+    },
     alternates: {
       canonical: `/tag/${tag.slug}`,
     },
