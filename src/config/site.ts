@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: "AiFeed",
   description:
-    "Twoje codzienne źródło wiadomości o AI, nowości badawczych i insightów z branży. Zasilane sztuczną inteligencją.",
+    "Twoje codzienne źródło wiadomości o sztucznej inteligencji, badaniach naukowych i nowościach z branży technologicznej.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://aifeed.pl",
   ogImage: "/og-image.png",
   links: {

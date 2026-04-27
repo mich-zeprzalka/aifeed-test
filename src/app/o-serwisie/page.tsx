@@ -1,10 +1,12 @@
-import { Newspaper, Layers, Rss, Zap, Cpu, Database, Bot, Paintbrush } from "lucide-react";
+import { Newspaper, Layers, Rss, Zap, Mail } from "lucide-react";
+import Link from "next/link";
 import type { Metadata } from "next";
+import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "O serwisie — AiFeed",
   description:
-    "AiFeed to w pełni zautomatyzowany serwis informacyjny o sztucznej inteligencji. Dowiedz się, jak działa nasz pipeline i jakie technologie napędzają serwis.",
+    "AiFeed to magazyn informacyjny o sztucznej inteligencji w języku polskim. Dowiedz się, co znajdziesz w serwisie i jak go najlepiej wykorzystać.",
   alternates: {
     canonical: "/o-serwisie",
   },
@@ -19,148 +21,75 @@ export default function AboutPage() {
           O serwisie
         </p>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-4">
-          O serwisie AiFeed
+          O serwisie {siteConfig.name}
         </h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Pierwszy w Polsce w pełni zautomatyzowany magazyn informacyjny o sztucznej inteligencji.
-          Bez redakcji, bez opóźnień — tylko AI, dane i algorytmy pracujące 24 godziny na dobę.
+          Polskojęzyczny magazyn informacyjny poświęcony sztucznej inteligencji — modelom,
+          badaniom, narzędziom i wpływowi AI na rynek oraz społeczeństwo.
         </p>
       </header>
 
-      {/* Section: What is AiFeed */}
+      {/* Section: Mission */}
       <section className="mb-10">
         <p className="mb-2 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
-          Czym jest AiFeed
+          Nasza misja
         </p>
         <h2 className="text-lg sm:text-xl font-bold tracking-tight mb-4">
-          Zautomatyzowany pipeline informacyjny
+          Wiedza o AI w przystępnej formie
         </h2>
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-          AiFeed to serwis, który samodzielnie monitoruje dziesiątki źródeł informacji ze świata AI,
-          selekcjonuje najważniejsze newsy, a następnie generuje kompletne artykuły w języku polskim.
-          Każdy tekst jest wzbogacany o miniaturki, tagi i kategoryzację — bez jakiejkolwiek
-          ludzkiej interwencji.
+          {siteConfig.name} powstał z prostego założenia: tempo rozwoju sztucznej inteligencji jest
+          tak szybkie, że trudno za nim nadążyć. Codziennie pojawiają się nowe modele, badania i
+          narzędzia — ale większość informacji dostępna jest wyłącznie w języku angielskim,
+          rozproszona po dziesiątkach blogów, portali i preprintów.
         </p>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Serwis powstał z przekonania, że informacje o sztucznej inteligencji powinny docierać
-          do polskojęzycznych czytelników szybko, w przystępnej formie i bez barier językowych.
-          Zamiast czekać na tłumaczenia czy streszczenia — dostarczamy je automatycznie.
+          Naszym celem jest dostarczać czytelnikom wybrane, najważniejsze i najbardziej wartościowe
+          informacje ze świata AI w języku polskim — w jednym miejscu, w przejrzystej formie i bez
+          zbędnego szumu.
         </p>
       </section>
 
-      {/* Section: How it works */}
+      {/* Section: What we cover */}
       <section className="mb-10">
         <p className="mb-2 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
-          Jak to działa
+          Tematyka
         </p>
         <h2 className="text-lg sm:text-xl font-bold tracking-tight mb-6">
-          Od źródła do publikacji w 4 krokach
+          O czym piszemy
         </h2>
-        <div className="space-y-6">
-          {[
-            {
-              step: "01",
-              title: "Monitorowanie źródeł RSS",
-              description:
-                "Pipeline nieustannie skanuje 20 kanałów RSS — blogi badawcze, portale technologiczne, repozytoria arXiv i oficjalne ogłoszenia firm AI.",
-            },
-            {
-              step: "02",
-              title: "Analiza i selekcja przez AI",
-              description:
-                "Zebrane materiały są analizowane pod kątem istotności, nowości i wartości informacyjnej. AI odrzuca duplikaty i szum, wybierając tylko najważniejsze tematy.",
-            },
-            {
-              step: "03",
-              title: "Generowanie artykułów",
-              description:
-                "Na podstawie wyselekcjonowanych źródeł AI tworzy pełne artykuły w języku polskim — z tytułem, leadem, treścią, tagami i kategoryzacją.",
-            },
-            {
-              step: "04",
-              title: "Publikacja na stronie",
-              description:
-                "Gotowe artykuły z wygenerowanymi miniaturkami trafiają automatycznie na stronę, dostępne dla czytelników w ciągu minut od pojawienia się informacji.",
-            },
-          ].map((item) => (
-            <div key={item.step} className="flex gap-4">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-mono font-bold text-primary">
-                {item.step}
-              </div>
-              <div>
-                <h3 className="text-sm font-bold mb-1">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {item.description}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Section: Technology Stack */}
-      <section className="mb-10">
-        <p className="mb-2 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
-          Technologia
-        </p>
-        <h2 className="text-lg sm:text-xl font-bold tracking-tight mb-6">
-          Stack technologiczny
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[
-            {
-              icon: Cpu,
-              name: "Next.js",
-              description: "Framework frontendowy z SSR i optymalizacją wydajności",
-            },
-            {
-              icon: Database,
-              name: "Supabase",
-              description: "Baza danych PostgreSQL z real-time API i autentykacją",
-            },
-            {
-              icon: Bot,
-              name: "Claude AI",
-              description: "Model językowy do analizy, selekcji i generowania treści",
-            },
-            {
-              icon: Paintbrush,
-              name: "Tailwind CSS",
-              description: "System stylowania zapewniający spójny, responsywny design",
-            },
-          ].map((tech) => (
-            <div
-              key={tech.name}
-              className="group flex gap-3 rounded-xl border border-border/40 bg-card/80 p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-sm"
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {siteConfig.categories.map((cat) => (
+            <Link
+              key={cat.slug}
+              href={`/kategoria/${cat.slug}`}
+              className="group flex flex-col gap-1 rounded-xl border border-border/40 bg-card/80 p-4 transition-all duration-300 hover:border-primary/30 hover:shadow-sm"
             >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary/15">
-                <tech.icon className="size-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold">{tech.name}</h3>
-                <p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">
-                  {tech.description}
-                </p>
-              </div>
-            </div>
+              <h3 className="text-sm font-bold group-hover:text-primary transition-colors">
+                {cat.name}
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {cat.description}
+              </p>
+            </Link>
           ))}
         </div>
       </section>
 
       {/* Stats */}
-      <section>
+      <section className="mb-10">
         <p className="mb-2 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
           W liczbach
         </p>
         <h2 className="text-lg sm:text-xl font-bold tracking-tight mb-6">
-          AiFeed w liczbach
+          {siteConfig.name} w skrócie
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             { icon: Newspaper, value: "50+", label: "Artykułów tygodniowo" },
-            { icon: Layers, value: "6", label: "Kategorii tematycznych" },
-            { icon: Rss, value: "20", label: "Źródeł RSS" },
-            { icon: Zap, value: "24/7", label: "Automatyczny monitoring" },
+            { icon: Layers, value: `${siteConfig.categories.length}`, label: "Kategorii tematycznych" },
+            { icon: Rss, value: "RSS", label: "Otwarty kanał" },
+            { icon: Zap, value: "24/7", label: "Codzienne aktualizacje" },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -176,6 +105,27 @@ export default function AboutPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Contact */}
+      <section>
+        <p className="mb-2 text-[10px] font-mono font-bold uppercase tracking-widest text-primary">
+          Kontakt
+        </p>
+        <h2 className="text-lg sm:text-xl font-bold tracking-tight mb-4">
+          Masz pytanie lub sugestię?
+        </h2>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+          Chętnie usłyszymy od Ciebie. Jeśli zauważyłeś błąd, masz propozycję tematu, albo chcesz
+          nawiązać współpracę — napisz do nas.
+        </p>
+        <a
+          href="mailto:kontakt@aifeed.pl"
+          className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-card/80 px-4 py-2.5 text-sm font-medium transition-all duration-300 hover:border-primary/40 hover:bg-card"
+        >
+          <Mail className="size-4" />
+          kontakt@aifeed.pl
+        </a>
       </section>
     </div>
   );

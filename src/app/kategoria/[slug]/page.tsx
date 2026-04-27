@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 import { Newspaper } from "lucide-react";
 import { ArticleCard } from "@/components/articles/article-card";
-import { CategoryBar } from "@/components/articles/category-bar";
 import { Pagination } from "@/components/ui/pagination";
 import { Breadcrumbs } from "@/components/articles/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getCategories, getCategoryBySlug, getArticlesByCategoryPaginated } from "@/lib/data";
+import { getCategoryBySlug, getArticlesByCategoryPaginated } from "@/lib/data";
 import { siteConfig } from "@/config/site";
 import { jsonLdScript } from "@/lib/jsonld";
 import type { Metadata } from "next";
@@ -57,9 +56,8 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   const { page: pageParam } = await searchParams;
   const pageNum = Math.max(1, parseInt(pageParam || "1", 10) || 1);
 
-  const [category, categories, paginated] = await Promise.all([
+  const [category, paginated] = await Promise.all([
     getCategoryBySlug(slug),
-    getCategories(),
     getArticlesByCategoryPaginated(slug, PAGE_SIZE, pageNum),
   ]);
 
@@ -88,7 +86,6 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
           dangerouslySetInnerHTML={{ __html: jsonLdScript(itemListJsonLd) }}
         />
       )}
-      <CategoryBar categories={categories} />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Breadcrumbs */}

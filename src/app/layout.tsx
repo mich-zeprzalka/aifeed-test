@@ -4,8 +4,9 @@ import { Header } from "@/components/layout/header";
 import { NewsTicker } from "@/components/layout/news-ticker";
 import { Footer } from "@/components/layout/footer";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
+import { CategoryBar } from "@/components/articles/category-bar";
 import { siteConfig } from "@/config/site";
-import { getTickerArticles } from "@/lib/data";
+import { getCategories, getTickerArticles } from "@/lib/data";
 import { jsonLdScript } from "@/lib/jsonld";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Analytics } from "@vercel/analytics/next";
@@ -81,7 +82,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const tickerItems = await getTickerArticles(10);
+  const [tickerItems, categories] = await Promise.all([
+    getTickerArticles(10),
+    getCategories(),
+  ]);
 
   const organizationJsonLd = {
     "@context": "https://schema.org",
@@ -120,6 +124,7 @@ export default async function RootLayout({
         <ScrollToTop />
         <NewsTicker items={tickerItems} />
         <Header />
+        <CategoryBar categories={categories} />
         <main id="main-content" className="flex-1">{children}</main>
         <GoogleAnalytics gaId="G-5SD17PTF0C" />
         <Analytics />

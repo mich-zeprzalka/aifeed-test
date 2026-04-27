@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface TickerItem {
   title: string;
@@ -14,64 +14,59 @@ interface NewsTickerProps {
 
 const PIXELS_PER_SECOND = 40;
 
-function NewsTickerImpl({ items }: NewsTickerProps) {
+// Snapshot items on first render and never react to prop updates after that.
+// Why: the root layout re-fetches on every navigation, so `items` gets a fresh
+// reference on each route change. Updating the animation against that risks
+// cancelling the WAAPI track and leaving it frozen if the rebuild catches the
+// DOM mid-reconciliation (offsetWidth = 0). Trading off in-session freshness
+// for a guaranteed always-scrolling marquee.
+export function NewsTicker({ items }: NewsTickerProps) {
+  const [snapshot] = useState<TickerItem[]>(items);
   const trackRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<Animation | null>(null);
 
   useEffect(() => {
     const track = trackRef.current;
-    if (!track || items.length === 0) return;
+    if (!track || snapshot.length === 0) return;
 
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-    if (prefersReducedMotion) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    let currentAnim: Animation | null = null;
     let cancelled = false;
 
-    // Build / rebuild the animation against the CURRENT track width. Called
-    // after fonts settle and again whenever the track resizes (late font
-    // swap, viewport change, style injection). Measuring once at mount
-    // occasionally caught distance=0 before fonts loaded, leaving the ticker
-    // visually frozen.
     const buildAnimation = () => {
       if (cancelled) return;
       const firstCopy = track.firstElementChild as HTMLElement | null;
       if (!firstCopy) return;
-
       const distance = firstCopy.offsetWidth;
       if (distance === 0) return;
 
-      currentAnim?.cancel();
+      animationRef.current?.cancel();
       const duration = (distance / PIXELS_PER_SECOND) * 1000;
-      currentAnim = track.animate(
+      animationRef.current = track.animate(
         [
           { transform: "translate3d(0, 0, 0)" },
           { transform: `translate3d(-${distance}px, 0, 0)` },
         ],
         { duration, iterations: Infinity, easing: "linear" }
       );
-      animationRef.current = currentAnim;
     };
 
-    // Wait for fonts so the initial measurement is final.
     const fontsReady = document.fonts?.ready ?? Promise.resolve();
     fontsReady.then(buildAnimation);
 
-    // Rebuild whenever the track width changes.
-    const ro = new ResizeObserver(() => buildAnimation());
+    const ro = new ResizeObserver(buildAnimation);
     ro.observe(track);
 
     // Browsers suspend WAAPI when the tab is hidden; resume on return.
     // pageshow handles bfcache restoration on Safari/Firefox.
     const resume = () => {
+      const anim = animationRef.current;
       if (
         document.visibilityState === "visible" &&
-        currentAnim &&
-        currentAnim.playState !== "running"
+        anim &&
+        anim.playState !== "running"
       ) {
-        currentAnim.play();
+        anim.play();
       }
     };
     document.addEventListener("visibilitychange", resume);
@@ -82,15 +77,15 @@ function NewsTickerImpl({ items }: NewsTickerProps) {
       ro.disconnect();
       document.removeEventListener("visibilitychange", resume);
       window.removeEventListener("pageshow", resume);
-      currentAnim?.cancel();
+      animationRef.current?.cancel();
       animationRef.current = null;
     };
-  }, [items]);
+  }, [snapshot]);
 
   const handleMouseEnter = () => animationRef.current?.pause();
   const handleMouseLeave = () => animationRef.current?.play();
 
-  if (items.length === 0) return null;
+  if (snapshot.length === 0) return null;
 
   return (
     <aside
@@ -106,7 +101,7 @@ function NewsTickerImpl({ items }: NewsTickerProps) {
             className="flex shrink-0 items-center whitespace-nowrap"
             aria-hidden={copy === 1 || undefined}
           >
-            {items.map((item, i) => (
+            {snapshot.map((item, i) => (
               <span key={i} className="contents">
                 <Link
                   href={`/artykul/${item.slug}`}
@@ -129,15 +124,3 @@ function NewsTickerImpl({ items }: NewsTickerProps) {
     </aside>
   );
 }
-
-// Skip re-render when the ticker items are identical by slug — the root
-// layout re-fetches on every navigation, so prop identity is never stable
-// even when the data hasn't changed. Without this guard, the inner effect
-// would tear down and rebuild the WAAPI animation on every route change.
-export const NewsTicker = memo(NewsTickerImpl, (prev, next) => {
-  if (prev.items.length !== next.items.length) return false;
-  for (let i = 0; i < prev.items.length; i++) {
-    if (prev.items[i].slug !== next.items[i].slug) return false;
-  }
-  return true;
-});

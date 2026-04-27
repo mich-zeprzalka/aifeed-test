@@ -3,13 +3,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function Loading() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Category bar skeleton */}
-      <div className="mb-8 flex gap-1.5">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-7 w-20 rounded-full" />
-        ))}
-      </div>
-
       {/* Hero skeleton */}
       <div className="grid gap-5 lg:grid-cols-5">
         <div className="lg:col-span-3">

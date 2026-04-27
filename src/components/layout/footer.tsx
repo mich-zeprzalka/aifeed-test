@@ -15,7 +15,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-              Twoje codzienne źródło wiadomości o sztucznej inteligencji, badaniach i rynku. W pełni zautomatyzowany magazyn zasilany AI.
+              Codzienne wiadomości ze świata sztucznej inteligencji — modele, badania, narzędzia i analizy rynku w jednym miejscu.
             </p>
           </div>
 
@@ -84,10 +84,10 @@ export function Footer() {
 
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-xs text-muted-foreground/60">
-            &copy; {new Date().getFullYear()} {siteConfig.name}. Treści generowane automatycznie przez AI.
+            &copy; {new Date().getFullYear()} {siteConfig.name}. Wszelkie prawa zastrzeżone.
           </p>
           <p className="text-xs text-muted-foreground/60">
-            Pędzi na Next.js, Supabase & Claude
+            Codzienna porcja AI — szybko i bez szumu.
           </p>
         </div>
       </div>

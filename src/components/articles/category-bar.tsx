@@ -17,6 +17,7 @@ export function CategoryBar({ categories }: CategoryBarProps) {
     ? pathname.split("/")[2]
     : undefined;
   const isHome = pathname === "/";
+  const isHidden = pathname.startsWith("/artykul/");
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   // Restore scroll position on mount; persist on scroll.
@@ -45,6 +46,11 @@ export function CategoryBar({ categories }: CategoryBarProps) {
       if (frame) cancelAnimationFrame(frame);
     };
   }, []);
+
+  // Hidden on single article pages — the article surface should stay focused
+  // on the content. Everywhere else the bar stays sticky-adjacent for fast
+  // navigation between categories.
+  if (isHidden) return null;
 
   // Use nav + aria-current="page" rather than role="tablist"/role="tab".
   // Tabs imply an ARIA-associated tabpanel; these links navigate to a new

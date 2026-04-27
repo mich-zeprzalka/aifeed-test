@@ -33,9 +33,8 @@ export default function PrivacyPage() {
             1. Administrator danych
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Administratorem serwisu jest AiFeed (aifeed.pl). Serwis działa jako zautomatyzowany
-            magazyn informacyjny i nie wymaga od użytkowników rejestracji ani podawania danych
-            osobowych w celu korzystania z treści.
+            Administratorem serwisu jest AiFeed (aifeed.pl). Korzystanie z treści serwisu nie
+            wymaga rejestracji ani podawania danych osobowych.
           </p>
         </section>
 
