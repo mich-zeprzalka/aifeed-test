@@ -162,9 +162,11 @@ aifeed/
 │   └── examples/                 # 5 mockupów HTML (poza App Router)
 │
 ├── supabase/
-│   ├── schema.sql                # pełny schemat (tabele + RLS + RPC + seed)
+│   ├── README.md                 # strategia migracji + weryfikacja
+│   ├── schema.sql                # pełny schemat (idempotentny; source of truth)
 │   └── migrations/
-│       └── 001_newsletter_and_popular_tags.sql  # wydzielona migracja idempotentna
+│       ├── 001_newsletter_and_popular_tags.sql
+│       └── 002_updated_at_trigger_and_fk_index.sql
 │
 ├── public/                       # favicon, icons, og-image
 │
@@ -256,23 +258,29 @@ aifeed/
 
 ## 5. Baza danych (Supabase)
 
-### Schemat (`supabase/schema.sql`)
+**Strategia wdrożenia:** `supabase/schema.sql` to **pojedyncze źródło prawdy** — idempotentny plik z całym schematem (re-run bez błędów). Dla baz które już działają w produkcji używaj inkrementalnych migracji z `supabase/migrations/NNN_*.sql`. Szczegóły w `supabase/README.md`.
+
+### Tabele (`supabase/schema.sql`)
 
 | Tabela | Kolumny kluczowe | Uwagi |
 |---|---|---|
-| `categories` | id (UUID), name, slug (UNIQUE), description, color | Seed: 6 kategorii PL |
-| `articles` | id, title, slug (UNIQUE), excerpt, content, category_id (FK), thumbnail_url, thumbnail_source, source_urls[], source_titles[], reading_time, is_featured, is_published, published_at | RLS: public read gdzie `is_published = true` |
+| `categories` | id (UUID), name, slug (UNIQUE), description, color | Seed: 6 kategorii PL spójne z `siteConfig.categories` |
+| `articles` | id, title, slug (UNIQUE), excerpt, content, category_id (FK), thumbnail_url, thumbnail_source, source_urls[], source_titles[], reading_time, is_featured, is_published, published_at, **created_at**, **updated_at** (auto-trigger) | RLS: public read gdzie `is_published = true` |
 | `tags` | id, name (UNIQUE), slug (UNIQUE) | |
 | `article_tags` | article_id, tag_id | composite PK, ON DELETE CASCADE |
 | `scraped_items` | id, source_url (UNIQUE), title, description, source_name, is_processed | Cache dedup pipeline'u |
 | `newsletter_subscribers` | id, email (UNIQUE), subscribed_at, unsubscribed_at | Zapis/odczyt wyłącznie service role (brak public policy) |
 
 ### Indeksy
-- `idx_articles_slug`
-- `idx_articles_published (is_published, published_at DESC)`
-- `idx_articles_category`
-- `idx_articles_featured (is_featured, published_at DESC)`
-- `idx_scraped_items_url`
+- `idx_articles_slug` — lookup po slug (każda strona artykułu)
+- `idx_articles_published (is_published, published_at DESC)` — listy najnowszych
+- `idx_articles_category` — filtrowanie po kategorii
+- `idx_articles_featured (is_featured, published_at DESC)` — featured na home
+- `idx_scraped_items_url` — pipeline dedup
+- **`idx_article_tags_tag_id`** — Postgres nie auto-indexuje FK; używane przez RPC `popular_tags` (JOIN po `tag_id`)
+
+### Triggers
+- **`articles_set_updated_at`** — `BEFORE UPDATE` → `NEW.updated_at = now()`. Bez tego kolumna `updated_at` zawsze = `created_at`, co psuje `sitemap.ts::lastModified` i JSON-LD `dateModified`.
 
 ### RLS policies
 - `articles` — public SELECT gdzie `is_published = true`
@@ -280,10 +288,10 @@ aifeed/
 - `scraped_items`, `newsletter_subscribers` — brak publicznej policy; dostęp wyłącznie przez service role (admin client)
 
 ### RPC
-- `popular_tags(tag_limit INT) → (id, name, slug, count)` — server-side `GROUP BY tag_id ORDER BY count DESC`, używany przez `getPopularTags()`
+- `popular_tags(tag_limit INT) → (id, name, slug, count)` — server-side `GROUP BY tag_id ORDER BY count DESC LIMIT`, `STABLE`. Używany przez `getPopularTags()` w `src/lib/data.ts`.
 
 ### Storage
-- Bucket `thumbnails` — public, `fileSizeLimit: 10 MB`, tworzony idempotentnie w `uploadToStorage()` (ignore "already exists")
+- Bucket `thumbnails` — public, `fileSizeLimit: 10 MB`, tworzony idempotentnie w `uploadToStorage()` przy pierwszym uploadzie AI-image (ignore "already exists"). Alternatywnie można utworzyć ręcznie w dashboardzie.
 
 ---
 
@@ -700,11 +708,19 @@ Zwraca `{message, generated[], rejected[], failed[{title,reason}], scraped, new}
 
 1. **`NEXT_PUBLIC_SITE_URL = https://www.aifeed.pl`** w Vercel (All Environments). Bez tego `<link rel="canonical">` wskazuje na non-www, podczas gdy ruch idzie na www — Google widzi rozbieżność.
 2. **Wygenerować nowy `OPENROUTER_API_KEY`** — aktualny zwraca 401 "User not found" w pipeline (potwierdzone próbnym triggerem). Podmienić w `.env.local` **oraz** Vercel Project Settings → Environment Variables.
-3. **Zaaplikować `supabase/migrations/001_newsletter_and_popular_tags.sql`** w Supabase SQL Editor.
-   - Plik migracji jest gotowy i idempotentny (`CREATE IF NOT EXISTS` / `CREATE OR REPLACE`).
-   - **Krok po kroku:** dashboard → SQL Editor → New query → wklej zawartość pliku → Run.
-   - Po wdrożeniu log `[data] getPopularTags RPC missing…` zniknie z buildu, a newsletter POST przestanie się psuć na świeżej instalacji DB.
-   - Szybki smoke test w SQL Editor: `SELECT * FROM popular_tags(10);` (pusty wynik gdy brak `article_tags` — też OK).
+3. **Zaaplikować migracje Supabase.** Dwa pliki, oba w `supabase/migrations/`, oba idempotentne:
+   - `001_newsletter_and_popular_tags.sql` — tabela `newsletter_subscribers` + RPC `popular_tags`.
+   - `002_updated_at_trigger_and_fk_index.sql` — trigger `articles.updated_at` + indeks FK `article_tags(tag_id)`.
+   - **Krok po kroku:** dashboard Supabase → SQL Editor → New query → wklej zawartość pliku → Run (powtórz dla drugiego pliku).
+   - Alternatywnie dla całkowicie pustej DB: uruchom jednorazowo `supabase/schema.sql` (zawiera już wszystko z 001 + 002).
+   - Po wdrożeniu log `[data] getPopularTags RPC missing…` zniknie z buildu.
+   - Smoke testy w SQL Editor:
+     ```sql
+     SELECT * FROM popular_tags(10);                                    -- (A) RPC
+     SELECT tgname FROM pg_trigger WHERE tgname='articles_set_updated_at';  -- (B) trigger
+     SELECT indexname FROM pg_indexes WHERE indexname='idx_article_tags_tag_id'; -- (C) indeks
+     ```
+   - Szczegóły w `supabase/README.md`.
 4. **Rotacja kluczy** — `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET` (standardowa higiena po współdzieleniu podczas developmentu).
 5. **Usunąć martwy projekt Vercel** `aifeed` (nie `aifeed-pl`) z dashboardu.
 

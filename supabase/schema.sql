@@ -1,7 +1,18 @@
--- AiFeed Database Schema
--- Run this in Supabase SQL Editor
+-- AiFeed — Pełny schemat bazy danych
+-- =============================================================================
+-- Pojedyncze źródło prawdy. Uruchom w Supabase SQL Editor (dashboard → SQL
+-- Editor → New query → wklej → Run). Plik jest w pełni idempotentny — można
+-- go re-runnać na istniejącej bazie bez błędów.
+--
+-- Ewolucja schematu (dla baz które już miały wcześniejszą wersję):
+-- zob. supabase/migrations/ dla inkrementalnych migracji.
+-- =============================================================================
 
--- Categories
+-- =============================================================================
+-- TABELE
+-- =============================================================================
+
+-- Kategorie artykułów — 6 kategorii seedowanych na końcu pliku.
 CREATE TABLE IF NOT EXISTS categories (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
@@ -11,7 +22,9 @@ CREATE TABLE IF NOT EXISTS categories (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Articles
+-- Artykuły — główna tabela contentowa.
+-- `source_urls[]` / `source_titles[]` — linki do oryginalnych źródeł (transparency).
+-- `thumbnail_source` — null = AI-generated, string = atrybucja og:image.
 CREATE TABLE IF NOT EXISTS articles (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT NOT NULL,
@@ -31,21 +44,22 @@ CREATE TABLE IF NOT EXISTS articles (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Tags
+-- Tagi — powstają dynamicznie z AI output, upsertowane przez pipeline.
 CREATE TABLE IF NOT EXISTS tags (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
   slug TEXT NOT NULL UNIQUE
 );
 
--- Article-Tag junction
+-- Junction artykuł ↔ tag. CASCADE — kasując artykuł czyścimy powiązania.
 CREATE TABLE IF NOT EXISTS article_tags (
   article_id UUID REFERENCES articles(id) ON DELETE CASCADE,
   tag_id UUID REFERENCES tags(id) ON DELETE CASCADE,
   PRIMARY KEY (article_id, tag_id)
 );
 
--- Scraped items cache
+-- Cache deduplikacji pipeline'u. Zapisuje każdy URL który pipeline widział,
+-- żeby nie retry'ować na tych samych itemach z RSS.
 CREATE TABLE IF NOT EXISTS scraped_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   source_url TEXT NOT NULL UNIQUE,
@@ -56,8 +70,8 @@ CREATE TABLE IF NOT EXISTS scraped_items (
   is_processed BOOLEAN DEFAULT false
 );
 
--- Newsletter subscribers
--- Written via service-role client only (no public RLS policy intentionally).
+-- Subskrybenci newslettera. Celowo brak public policy — zapis i odczyt
+-- wyłącznie przez service role key (admin client w /api/newsletter).
 CREATE TABLE IF NOT EXISTS newsletter_subscribers (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
@@ -65,14 +79,56 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
   unsubscribed_at TIMESTAMPTZ
 );
 
--- Indexes
+-- =============================================================================
+-- INDEKSY
+-- =============================================================================
+
+-- Hot path: lookup artykułu po slug (każda strona artykułu).
 CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug);
-CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(is_published, published_at DESC);
+
+-- Hot path: lista najnowszych opublikowanych (home, category, feeds).
+CREATE INDEX IF NOT EXISTS idx_articles_published
+  ON articles(is_published, published_at DESC);
+
+-- Hot path: artykuły danej kategorii (category page + grouped home).
 CREATE INDEX IF NOT EXISTS idx_articles_category ON articles(category_id);
-CREATE INDEX IF NOT EXISTS idx_articles_featured ON articles(is_featured, published_at DESC);
+
+-- Hot path: featured sekcje na home.
+CREATE INDEX IF NOT EXISTS idx_articles_featured
+  ON articles(is_featured, published_at DESC);
+
+-- Pipeline dedup — lookup przed wstawieniem.
 CREATE INDEX IF NOT EXISTS idx_scraped_items_url ON scraped_items(source_url);
 
--- RLS
+-- FK Postgres NIE jest auto-indexowane. RPC popular_tags robi JOIN po tag_id.
+CREATE INDEX IF NOT EXISTS idx_article_tags_tag_id ON article_tags(tag_id);
+
+-- =============================================================================
+-- TRIGGER: updated_at
+-- =============================================================================
+
+-- Utrzymuje kolumnę articles.updated_at aktualną przy każdym UPDATE.
+-- Używane przez sitemap.ts (lastModified) i JSON-LD (dateModified).
+-- Bez triggera updated_at zawsze = created_at.
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS articles_set_updated_at ON articles;
+CREATE TRIGGER articles_set_updated_at
+  BEFORE UPDATE ON articles
+  FOR EACH ROW
+  EXECUTE FUNCTION set_updated_at();
+
+-- =============================================================================
+-- ROW LEVEL SECURITY
+-- =============================================================================
+
+-- Włączenie RLS na wszystkich tabelach — ALTER jest idempotentne.
 ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
@@ -80,17 +136,35 @@ ALTER TABLE article_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scraped_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 
--- Public read policies
-CREATE POLICY "Public read articles" ON articles FOR SELECT USING (is_published = true);
-CREATE POLICY "Public read categories" ON categories FOR SELECT USING (true);
-CREATE POLICY "Public read tags" ON tags FOR SELECT USING (true);
-CREATE POLICY "Public read article_tags" ON article_tags FOR SELECT USING (true);
+-- Public SELECT policies. CREATE POLICY nie ma IF NOT EXISTS, więc najpierw
+-- DROP IF EXISTS. Service role bypasuje RLS (admin client → pełny dostęp).
 
--- Service role has full access via admin client (bypasses RLS)
+DROP POLICY IF EXISTS "Public read articles" ON articles;
+CREATE POLICY "Public read articles" ON articles
+  FOR SELECT USING (is_published = true);
 
--- RPC: aggregate top N tags by usage count (server-side GROUP BY).
--- Used by getPopularTags() in src/lib/data.ts. Falls back to in-memory
--- aggregation in the app when this function is missing.
+DROP POLICY IF EXISTS "Public read categories" ON categories;
+CREATE POLICY "Public read categories" ON categories
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public read tags" ON tags;
+CREATE POLICY "Public read tags" ON tags
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public read article_tags" ON article_tags;
+CREATE POLICY "Public read article_tags" ON article_tags
+  FOR SELECT USING (true);
+
+-- scraped_items i newsletter_subscribers celowo BEZ public policy — zapis
+-- i odczyt tylko przez service role key.
+
+-- =============================================================================
+-- RPC (stored functions)
+-- =============================================================================
+
+-- Agreguje top N tagów po użyciu (server-side GROUP BY). Używane przez
+-- getPopularTags() w src/lib/data.ts zamiast pobierania całej article_tags
+-- do JS. `STABLE` — wynik zależy tylko od tabel, cacheable w obrębie query.
 CREATE OR REPLACE FUNCTION popular_tags(tag_limit INT)
 RETURNS TABLE (id UUID, name TEXT, slug TEXT, count BIGINT) AS $$
   SELECT t.id, t.name, t.slug, COUNT(*) AS count
@@ -101,7 +175,12 @@ RETURNS TABLE (id UUID, name TEXT, slug TEXT, count BIGINT) AS $$
   LIMIT tag_limit;
 $$ LANGUAGE SQL STABLE;
 
--- Seed categories
+-- =============================================================================
+-- SEED: kategorie
+-- =============================================================================
+
+-- 6 kategorii — spójne z src/config/site.ts:siteConfig.categories.
+-- ON CONFLICT DO NOTHING — re-run nie nadpisze edytowanych nazw/opisów.
 INSERT INTO categories (name, slug, description, color) VALUES
   ('Modele AI', 'modele-ai', 'Premiery, aktualizacje i porównania modeli AI', '#6366f1'),
   ('Badania i Nauka', 'badania', 'Przełomowe badania naukowe i odkrycia w dziedzinie AI', '#8b5cf6'),
@@ -110,3 +189,14 @@ INSERT INTO categories (name, slug, description, color) VALUES
   ('Narzędzia i Aplikacje', 'narzedzia', 'Nowe narzędzia, aplikacje i platformy wykorzystujące AI', '#10b981'),
   ('Poradniki', 'poradniki', 'Praktyczne tutoriale, przewodniki i porady dotyczące AI', '#ec4899')
 ON CONFLICT (slug) DO NOTHING;
+
+-- =============================================================================
+-- STORAGE (info)
+-- =============================================================================
+
+-- Bucket `thumbnails` dla AI-generowanych miniatur jest tworzony imperatywnie
+-- w kodzie pipeline'u (src/lib/images/generator.ts::uploadToStorage):
+--   public:          true
+--   fileSizeLimit:   10 MB
+-- Jeśli chcesz go utworzyć ręcznie: Supabase dashboard → Storage → New bucket
+-- → name: thumbnails, public: ON, file size limit: 10 MB.
