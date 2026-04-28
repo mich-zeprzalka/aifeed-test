@@ -3,6 +3,70 @@ import { ARTICLE_SYSTEM_PROMPT, ARTICLE_USER_PROMPT } from "./prompts";
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 /**
+ * Repair common markdown formatting failures from the LLM before storage.
+ * Two symptoms we've seen:
+ *   1. Bullet lists collapsed onto one line ("- A - B - C") render as a single
+ *      paragraph in react-markdown.
+ *   2. Headings/lists missing blank-line separators don't trigger block parsing
+ *      in CommonMark, so they render inline with the preceding paragraph.
+ * We process line-by-line to avoid regex foot-guns (e.g. inserting blank lines
+ * between adjacent items of an already-correct list).
+ */
+export function normalizeMarkdown(input: string): string {
+  const isHeading = (s: string) => /^#{2,6} /.test(s);
+  const isListItem = (s: string) => /^- /.test(s);
+  const isBlockMarker = (s: string) => isHeading(s) || isListItem(s);
+
+  // Pass 1 — line-level rewrites: bullet style + inline-merged list repair.
+  const rawLines = input.replace(/\r\n/g, "\n").split("\n");
+  const expanded: string[] = [];
+  for (const raw of rawLines) {
+    // Normalise `*`/`•` bullets to `-`.
+    const line = raw.replace(/^[ \t]*[•*][ \t]+/, "- ");
+
+    // Repair "- a - b - c" merged list. Heuristic: must start with "- ", have
+    // ≥2 inline " - " markers, and every produced segment must be ≥ 8 chars
+    // (protects prose lines like "- Pierwszy punkt — szczegół" from shredding).
+    if (isListItem(line)) {
+      const inlineMarkers = (line.match(/ - /g) || []).length;
+      if (inlineMarkers >= 2) {
+        const parts = line.slice(2).split(/ - /).map((p) => p.trim()).filter(Boolean);
+        if (parts.every((p) => p.length >= 8)) {
+          for (const p of parts) expanded.push(`- ${p}`);
+          continue;
+        }
+      }
+    }
+    expanded.push(line);
+  }
+
+  // Pass 2 — block-level spacing. Insert blank line BEFORE a heading or the
+  // first item of a list when the prev line is non-blank, non-list, non-heading;
+  // insert blank line AFTER a heading when the next line is non-blank.
+  const out: string[] = [];
+  for (let i = 0; i < expanded.length; i++) {
+    const cur = expanded[i];
+    const prev = out.length > 0 ? out[out.length - 1] : null;
+    const isFirstListItem = isListItem(cur) && (prev === null || !isListItem(prev));
+
+    if ((isHeading(cur) || isFirstListItem) && prev !== null && prev !== "" && !isBlockMarker(prev)) {
+      out.push("");
+    }
+    out.push(cur);
+
+    if (isHeading(cur)) {
+      const next = expanded[i + 1];
+      if (next !== undefined && next !== "" && !isHeading(next)) {
+        out.push("");
+      }
+    }
+  }
+
+  // Collapse 3+ blank lines to one.
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/**
  * Robustly extract metadata JSON from the AI response.
  * Tries multiple delimiter patterns, then falls back to finding
  * the last JSON block in the response.
@@ -129,7 +193,7 @@ export async function generateArticle(
 
   // Split content and metadata — flexible delimiter matching
   const meta = extractMeta(responseText);
-  const content = meta._content;
+  const content = normalizeMarkdown(meta._content);
 
   return {
     content,

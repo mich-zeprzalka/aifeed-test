@@ -56,6 +56,19 @@ export function assessArticleQuality(article: GeneratedArticle): QualityResult {
     issues.push("tytuł za krótki lub brak");
   }
 
+  // Detect English titles that slipped past the prompt. Stopword-based heuristic:
+  // 2+ unambiguous English function words almost never appear in a Polish title.
+  // Heavy penalty pushes it under the 50 threshold so the article is rejected
+  // and the pipeline doesn't publish "Jury selection in Musk v. Altman" again.
+  if (article.title) {
+    const englishStopwords = /\b(the|in|with|and|of|for|to|after|before|on|over|under|is|are|was|were|will|should|could|would|don['’]t|doesn['’]t|isn['’]t|aren['’]t|that|this|these|those|its|it['’]s|just|why|how|when|where|what|who|but)\b/gi;
+    const matches = article.title.match(englishStopwords) || [];
+    if (matches.length >= 2) {
+      score -= 50;
+      issues.push(`tytuł po angielsku (${matches.length} słów: ${matches.slice(0, 3).join(", ")})`);
+    }
+  }
+
   if (!article.excerpt || article.excerpt.length < 50) {
     score -= 10;
     issues.push("excerpt za krótki lub brak");

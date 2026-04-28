@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, ExternalLink, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import { getArticleBySlug, getArticles, getAdjacentArticles } from "@/lib/data";
+import { getArticleBySlug, getAdjacentArticles, getRelatedArticles } from "@/lib/data";
 import { ArticleCard } from "@/components/articles/article-card";
 import { Breadcrumbs } from "@/components/articles/breadcrumbs";
 import { ShareButtons } from "@/components/articles/share-buttons";
@@ -79,15 +79,12 @@ export default async function ArticlePage({ params }: PageProps) {
   const article = await getCachedArticle(slug);
   if (!article) notFound();
 
-  const [allArticles, adjacent] = await Promise.all([
-    getArticles(10),
+  const [relatedArticles, adjacent] = await Promise.all([
+    getRelatedArticles(article.id, 3),
     article.category_id && article.published_at
       ? getAdjacentArticles(article.id, article.category_id, article.published_at)
       : Promise.resolve({ prev: null, next: null }),
   ]);
-  const relatedArticles = allArticles
-    .filter((a) => a.id !== article.id && a.category_id === article.category_id)
-    .slice(0, 3);
 
   const publishedDate = article.published_at
     ? new Date(article.published_at).toLocaleDateString("pl-PL", {

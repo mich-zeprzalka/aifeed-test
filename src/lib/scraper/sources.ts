@@ -1,4 +1,17 @@
-export const RSS_SOURCES = [
+// `alwaysRelevant: true` skips the AI-keyword filter in parser.ts. Set ONLY for
+// feeds that are by definition AI-only (company AI research blogs, AI sub-feeds,
+// arXiv cs.AI). Generic company blogs (NVIDIA's main blog covers gaming/auto/
+// datacenter; Microsoft's "AI" feed is largely business announcements) MUST be
+// keyword-filtered.
+
+export interface RSSSource {
+  name: string;
+  url: string;
+  category: string;
+  alwaysRelevant?: boolean;
+}
+
+export const RSS_SOURCES: readonly RSSSource[] = [
   // ===== Główne serwisy technologiczne =====
   {
     name: "TechCrunch AI",
@@ -46,36 +59,45 @@ export const RSS_SOURCES = [
     name: "OpenAI Blog",
     url: "https://openai.com/blog/rss.xml",
     category: "modele-ai",
+    alwaysRelevant: true,
   },
   {
     name: "Google AI Blog",
     url: "https://blog.google/technology/ai/rss/",
     category: "modele-ai",
+    alwaysRelevant: true,
   },
   {
     name: "Google DeepMind",
     url: "https://deepmind.google/blog/rss.xml",
     category: "badania",
+    alwaysRelevant: true,
   },
   {
     name: "Microsoft AI Blog",
     url: "https://blogs.microsoft.com/ai/feed/",
     category: "biznes",
+    // No alwaysRelevant — feed mixes corporate AI announcements with generic
+    // cloud/business posts. Keyword filter weeds those out.
   },
   {
     name: "NVIDIA AI Blog",
     url: "https://blogs.nvidia.com/feed/",
     category: "modele-ai",
+    // No alwaysRelevant — main NVIDIA blog covers GeForce/automotive/datacenter
+    // alongside AI. Keyword filter required.
   },
   {
     name: "Hugging Face Blog",
     url: "https://huggingface.co/blog/feed.xml",
     category: "narzedzia",
+    alwaysRelevant: true,
   },
   {
     name: "Anthropic Research",
     url: "https://www.anthropic.com/rss.xml",
     category: "badania",
+    alwaysRelevant: true,
   },
 
   // ===== Źródła akademickie =====
@@ -83,6 +105,7 @@ export const RSS_SOURCES = [
     name: "arXiv AI",
     url: "https://rss.arxiv.org/rss/cs.AI",
     category: "badania",
+    alwaysRelevant: true,
   },
 
   // ===== Polskie źródła =====
@@ -109,5 +132,3 @@ export const RSS_SOURCES = [
     category: "narzedzia",
   },
 ] as const;
-
-export type RSSSource = (typeof RSS_SOURCES)[number];

@@ -82,8 +82,18 @@ export function NewsTicker({ items }: NewsTickerProps) {
     };
   }, [snapshot]);
 
-  const handleMouseEnter = () => animationRef.current?.pause();
-  const handleMouseLeave = () => animationRef.current?.play();
+  // Pause-on-hover is intentional for desktop, but touch devices synthesize
+  // `mouseenter` on tap without a reliable matching `mouseleave` once the user
+  // navigates away — leaving the marquee frozen across route changes. Gate the
+  // handlers on the actual pointer type so phones never pause.
+  const handlePointerEnter = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
+    animationRef.current?.pause();
+  };
+  const handlePointerLeave = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
+    animationRef.current?.play();
+  };
 
   if (snapshot.length === 0) return null;
 
@@ -91,8 +101,8 @@ export function NewsTicker({ items }: NewsTickerProps) {
     <aside
       aria-label="Najnowsze artykuły"
       className="border-b border-border bg-foreground overflow-hidden"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
     >
       <div ref={trackRef} className="flex w-max will-change-transform">
         {[0, 1].map((copy) => (

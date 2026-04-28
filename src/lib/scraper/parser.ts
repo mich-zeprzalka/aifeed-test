@@ -8,6 +8,34 @@ const parser = new Parser({
   },
 });
 
+// Word-boundary regex avoids false positives on "said"/"again"/"main" that a
+// plain substring match on "ai" would hit. Anchor on `\b` so "ai" alone matches
+// only as a whole word; longer tokens (chatgpt, openai, claude) match anywhere.
+const AI_KEYWORD_REGEX = new RegExp(
+  [
+    // Generic
+    "\\bai\\b", "\\baml\\b", "\\bml\\b",
+    "artificial intelligence", "machine learning", "deep learning",
+    "neural network", "neural net",
+    // Architectures and techniques
+    "\\bllm\\b", "large language model", "transformer", "diffusion model",
+    "\\brag\\b", "embedding", "fine[- ]?tun", "\\brlhf\\b", "alignment",
+    "reasoning", "agentic", "ai agent", "multimodal", "vision[- ]language",
+    "\\bvlm\\b", "\\bmoe\\b", "mixture of experts", "synthetic data",
+    "reinforcement learning",
+    // Models and products
+    "\\bgpt[- ]?\\d?", "chatgpt", "claude", "gemini", "llama", "mistral",
+    "qwen", "deepseek", "grok", "phi[- ]\\d", "copilot", "midjourney",
+    "stable diffusion", "dall[- ]?e", "\\bsora\\b",
+    // Companies and platforms
+    "openai", "anthropic", "deepmind", "hugging ?face", "cohere",
+    "perplexity", "stability ai", "runway ml",
+    // Hardware/infra in AI context
+    "\\btpu\\b", "ai chip", "ai accelerator",
+  ].join("|"),
+  "i"
+);
+
 export interface ScrapedArticle {
   title: string;
   description: string;
@@ -28,17 +56,13 @@ export async function scrapeAllFeeds(): Promise<ScrapedArticle[]> {
       for (const item of items) {
         if (!item.title || !item.link) continue;
 
-        // Filter AI-related content
-        const text = `${item.title} ${item.contentSnippet || ""}`.toLowerCase();
-        const aiKeywords = ["ai", "artificial intelligence", "machine learning", "llm", "gpt", "claude", "gemini", "neural", "deep learning", "model", "transformer", "openai", "anthropic", "meta ai", "mistral", "copilot", "chatgpt", "midjourney", "stable diffusion", "hugging face", "nvidia", "deepmind", "reasoning", "agentic"];
-        const isAIRelated = aiKeywords.some((kw) => text.includes(kw));
-
-        // Company blogs, research feeds, and arXiv are always AI-related
-        const alwaysRelevant = ["Blog", "DeepMind", "Hugging Face", "Anthropic", "arXiv"].some(
-          (kw) => source.name.includes(kw)
-        );
-        if (!isAIRelated && !alwaysRelevant) {
-          continue;
+        // Skip filter only for sources flagged alwaysRelevant in sources.ts
+        // (AI-only research blogs and arXiv cs.AI). Everything else, including
+        // mixed-topic company blogs (NVIDIA, Microsoft), goes through the
+        // keyword gate below.
+        if (!source.alwaysRelevant) {
+          const text = `${item.title} ${item.contentSnippet || ""}`;
+          if (!AI_KEYWORD_REGEX.test(text)) continue;
         }
 
         results.push({

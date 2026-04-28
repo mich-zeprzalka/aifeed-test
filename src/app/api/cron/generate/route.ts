@@ -70,6 +70,20 @@ async function runPipeline(request: NextRequest) {
     const rejected: string[] = [];
     const failed: { title: string; reason: string }[] = [];
 
+    // Editorial featured-article gating: at most ONE featured per UTC day, and
+    // only when the AI quality score is ≥ 80 (excellent, not just passing).
+    // Without these guards `is_featured` flips on every cron run and pollutes
+    // sitemap priority signals + the "wyróżniony" hero on the home page.
+    const QUALITY_FEATURED_THRESHOLD = 80;
+    const startOfTodayUtc = new Date();
+    startOfTodayUtc.setUTCHours(0, 0, 0, 0);
+    const { count: featuredToday } = await supabase
+      .from("articles")
+      .select("id", { count: "exact", head: true })
+      .eq("is_featured", true)
+      .gte("published_at", startOfTodayUtc.toISOString());
+    let canFeatureThisRun = (featuredToday || 0) === 0;
+
     for (const item of topItems) {
       try {
         console.log(`Generating article for: ${item.title}`);
@@ -134,6 +148,12 @@ async function runPipeline(request: NextRequest) {
           .eq("slug", article.category)
           .maybeSingle();
 
+        // Featured only when this article is excellent AND we haven't featured
+        // anything else today yet. We flip the per-run flag eagerly so a second
+        // ≥80-score article in the same batch doesn't also get featured.
+        const shouldFeature = canFeatureThisRun && quality.score >= QUALITY_FEATURED_THRESHOLD;
+        if (shouldFeature) canFeatureThisRun = false;
+
         // Insert article
         const { data: insertedArticle, error: insertError } = await supabase
           .from("articles")
@@ -148,7 +168,7 @@ async function runPipeline(request: NextRequest) {
             source_urls: sourceUrls,
             source_titles: sourceTitles,
             reading_time: article.reading_time,
-            is_featured: generated.length === 0,
+            is_featured: shouldFeature,
             is_published: true,
             published_at: new Date().toISOString(),
           })

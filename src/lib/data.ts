@@ -453,15 +453,22 @@ export interface AdjacentArticles {
 }
 
 /**
- * Get previous and next articles in the same category, ordered by published_at.
- * "Previous" = older, "Next" = newer.
+ * Get previous and next articles for the article navigation footer.
+ *
+ * Strategy: prefer same-category neighbors, but always return both prev and
+ * next when more than one published article exists. At category edges (newest
+ * or oldest in category) we wrap within the category — newest article's "prev"
+ * loops back to the oldest in that category, and vice versa. If the category
+ * has only one article (the current one), we cross category boundaries and use
+ * the global newest/oldest. This guarantees the user can always navigate left
+ * and right, eliminating dead-end posts.
  */
 export async function getAdjacentArticles(
   articleId: string,
   categoryId: string,
   publishedAt: string
 ): Promise<AdjacentArticles> {
-  const [prevResult, nextResult] = await Promise.all([
+  const [olderInCat, newerInCat] = await Promise.all([
     db()
       .from("articles")
       .select("slug, title")
@@ -484,10 +491,113 @@ export async function getAdjacentArticles(
       .maybeSingle(),
   ]);
 
-  return {
-    prev: prevResult.data || null,
-    next: nextResult.data || null,
-  };
+  let prev: AdjacentArticle | null = olderInCat.data || null;
+  let next: AdjacentArticle | null = newerInCat.data || null;
+
+  // Prev missing (current is oldest in category) → wrap to newest in category.
+  if (!prev) {
+    const { data } = await db()
+      .from("articles")
+      .select("slug, title")
+      .eq("is_published", true)
+      .eq("category_id", categoryId)
+      .neq("id", articleId)
+      .order("published_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    prev = data || null;
+  }
+
+  // Next missing (current is newest in category) → wrap to oldest in category.
+  if (!next) {
+    const { data } = await db()
+      .from("articles")
+      .select("slug, title")
+      .eq("is_published", true)
+      .eq("category_id", categoryId)
+      .neq("id", articleId)
+      .order("published_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    next = data || null;
+  }
+
+  // Still missing — category has only this one article. Fall back globally.
+  if (!prev) {
+    const { data } = await db()
+      .from("articles")
+      .select("slug, title")
+      .eq("is_published", true)
+      .neq("id", articleId)
+      .order("published_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    prev = data || null;
+  }
+  if (!next) {
+    const { data } = await db()
+      .from("articles")
+      .select("slug, title")
+      .eq("is_published", true)
+      .neq("id", articleId)
+      .order("published_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    next = data || null;
+  }
+
+  return { prev, next };
+}
+
+// ===================== RELATED ARTICLES =====================
+
+/**
+ * Pick `count` articles to show under "Podobne publikacje" on the article page.
+ *
+ * Goal: always show the full set (default 3) and maximise variety, even when
+ * the current article's category is sparse. We pull recent posts (last 7 days
+ * first, widening to 30/90 days, then all-time) excluding the current article,
+ * shuffle in memory, and slice. This sidesteps PostgREST not exposing
+ * `ORDER BY random()`.
+ */
+export async function getRelatedArticles(
+  currentArticleId: string,
+  count = 3
+): Promise<ArticleWithRelations[]> {
+  const windows = [7, 30, 90, null] as const; // days; null = no time filter
+
+  for (const days of windows) {
+    let query = db()
+      .from("articles")
+      .select("*, category:categories(*)")
+      .eq("is_published", true)
+      .neq("id", currentArticleId)
+      .order("published_at", { ascending: false })
+      // Pull a healthy candidate pool so the shuffle has variety.
+      .limit(50);
+
+    if (days !== null) {
+      const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+      query = query.gte("published_at", since);
+    }
+
+    const { data: articles, error } = await query;
+    if (error) {
+      console.error("[data] getRelatedArticles failed:", error.message);
+      return [];
+    }
+    if (!articles || articles.length < count) continue;
+
+    // Fisher-Yates shuffle, then take `count`.
+    const pool = [...articles];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return attachTagsBatch(pool.slice(0, count));
+  }
+
+  return [];
 }
 
 // ===================== ALL TAGS (for sitemap) =====================
