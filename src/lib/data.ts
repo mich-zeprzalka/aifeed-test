@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Article, Category, Tag } from "@/types/database";
 import { sanitizeOrQuery } from "@/lib/search-utils";
@@ -221,7 +222,11 @@ export async function getArticlesByCategoryPaginated(
   };
 }
 
-export async function getCategories(): Promise<Category[]> {
+// `cache()` from React 19 deduplicates calls within the same request — so
+// when the root layout AND the home page both call `getCategories()` we only
+// hit Supabase once. Each request gets its own cache; nothing leaks across
+// requests. Same pattern below for `getTickerArticles` and `getPopularTags`.
+export const getCategories = cache(async (): Promise<Category[]> => {
   const { data, error } = await db()
     .from("categories")
     .select("*")
@@ -232,7 +237,7 @@ export async function getCategories(): Promise<Category[]> {
     return [];
   }
   return data || [];
-}
+});
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
   const { data, error } = await db()
@@ -332,7 +337,7 @@ export async function getArticlesGroupedByCategory(
  * Prefers the Supabase RPC `popular_tags(tag_limit)` (server-side GROUP BY).
  * Falls back to in-memory aggregation if the RPC is missing (older DBs).
  */
-export async function getPopularTags(limit = 10): Promise<Tag[]> {
+export const getPopularTags = cache(async (limit = 10): Promise<Tag[]> => {
   const rpc = await db().rpc("popular_tags", { tag_limit: limit });
   if (!rpc.error && Array.isArray(rpc.data)) {
     return rpc.data.map((row: { id: string; name: string; slug: string }) => ({
@@ -369,7 +374,7 @@ export async function getPopularTags(limit = 10): Promise<Tag[]> {
 
   const tagMap = new Map(tags.map((t) => [t.id, t as Tag]));
   return topTagIds.map((id) => tagMap.get(id)).filter(Boolean) as Tag[];
-}
+});
 
 export async function getSitemapArticles(limit = 5000): Promise<{ slug: string; updated_at: string; is_featured: boolean }[]> {
   const { data, error } = await db()
@@ -386,7 +391,7 @@ export async function getSitemapArticles(limit = 5000): Promise<{ slug: string; 
   return data || [];
 }
 
-export async function getTickerArticles(limit = 10): Promise<{ title: string; slug: string }[]> {
+export const getTickerArticles = cache(async (limit = 10): Promise<{ title: string; slug: string }[]> => {
   const { data, error } = await db()
     .from("articles")
     .select("title, slug")
@@ -399,7 +404,7 @@ export async function getTickerArticles(limit = 10): Promise<{ title: string; sl
     return [];
   }
   return data || [];
-}
+});
 
 // ===================== TAG PAGES =====================
 

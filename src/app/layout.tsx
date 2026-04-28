@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { Header } from "@/components/layout/header";
 import { NewsTicker } from "@/components/layout/news-ticker";
@@ -53,6 +53,12 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  // `openGraph.images` and `twitter.images` are intentionally NOT set here.
+  // The file-convention route at `app/opengraph-image.tsx` automatically
+  // populates both for the root and is inherited by every nested route that
+  // doesn't define its own opengraph-image. Setting them manually would
+  // duplicate (or override and lose the alt/size/contentType from the file
+  // convention). Same pattern as `app/artykul/[slug]/page.tsx`.
   openGraph: {
     type: "website",
     locale: "pl_PL",
@@ -60,13 +66,11 @@ export const metadata: Metadata = {
     title: siteConfig.name,
     description: siteConfig.description,
     siteName: siteConfig.name,
-    images: [{ url: siteConfig.ogImage, width: 1200, height: 630, alt: siteConfig.name }],
   },
   twitter: {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
-    images: [siteConfig.ogImage],
   },
   alternates: {
     types: {
@@ -84,6 +88,18 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+};
+
+// Next.js 13+ separates viewport metadata from `metadata`. Mobile browser
+// chrome (Safari URL bar, Android task switcher) follows `theme-color`. Two
+// values keyed by `prefers-color-scheme` so the bar matches the user's actual
+// rendered theme rather than a single neutral colour. Manual <meta> tags in
+// <head> are not needed — Next emits these automatically from this export.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#1c1d2e" },
+  ],
 };
 
 export default async function RootLayout({
@@ -116,15 +132,11 @@ export default async function RootLayout({
     >
       <head>
         {/* Preconnect to Supabase Storage — every article hero image hits this
-            host. Saves DNS + TLS handshake on the LCP image. */}
+            host. Saves DNS + TLS handshake on the LCP image. preconnect alone
+            is sufficient for all modern browsers (Chrome/Firefox/Safari/Edge
+            since ~2017); dns-prefetch fallback kept around in old SEO guides
+            is now redundant. */}
         <link rel="preconnect" href="https://iwseooszjbafasmjdiki.supabase.co" />
-        <link rel="dns-prefetch" href="https://iwseooszjbafasmjdiki.supabase.co" />
-
-        {/* Mobile browser chrome (Safari URL bar) follows theme. Two values
-            for light/dark so the bar matches the user's actual rendered theme
-            instead of a single neutral color. */}
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fafafa" />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1c1d2e" />
 
         <script
           type="application/ld+json"
