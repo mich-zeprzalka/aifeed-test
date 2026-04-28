@@ -187,7 +187,7 @@ export function NewsTicker({ items }: NewsTickerProps) {
           >
             <Link
               href={`/artykul/${item.slug}`}
-              className="py-1.5 text-sm text-background/70 hover:text-background transition-colors"
+              className="py-1.5 text-xs text-background/70 hover:text-background transition-colors"
             >
               {item.title}
             </Link>

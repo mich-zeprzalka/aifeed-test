@@ -314,7 +314,7 @@ export default async function ArticlePage({ params }: PageProps) {
             screen-reader and keyboard-only users get a short path back without
             scrolling through the article in reverse. */}
         <a
-          href="#primary-nav"
+          href="#site-header"
           className="sr-only focus:not-sr-only focus:fixed focus:bottom-4 focus:left-1/2 focus:-translate-x-1/2 focus:z-[100] focus:rounded-lg focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-background"
         >
           Powrót do nawigacji
