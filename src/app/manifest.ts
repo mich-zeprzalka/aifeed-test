@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "AiFeed — Wiadomości AI",
     short_name: "AiFeed",
-    description: "Twoje codzienne źródło wiadomości o AI, nowości badawczych i insightów z branży.",
+    description: "Twoje codzienne źródło wiadomości o AI",
     start_url: "/",
     display: "standalone",
     background_color: "#fafafa",
