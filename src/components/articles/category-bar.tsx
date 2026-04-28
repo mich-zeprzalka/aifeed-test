@@ -108,10 +108,11 @@ export function CategoryBar({ categories }: CategoryBarProps) {
 
   // Pill class helper — keeps active/inactive variants consistent between
   // the "Wszystko" link and the categories map below. Same pattern as
-  // `mobileLinkClass` in `header.tsx`.
+  // `mobileLinkClass` in `header.tsx`. Layout concerns (no-shrink,
+  // no-wrap) live on the parent <li>, not here — see comment on the <li>.
   const pillClass = (active: boolean) =>
     cn(
-      "shrink-0 rounded-full px-4 py-1.5 text-sm transition-colors",
+      "rounded-full px-4 py-1.5 text-sm transition-colors",
       active
         ? "bg-foreground text-background font-bold shadow-sm"
         : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted"
@@ -128,7 +129,15 @@ export function CategoryBar({ categories }: CategoryBarProps) {
           role="list"
           className="no-scrollbar flex items-center gap-2 overflow-x-auto py-3"
         >
-          <li>
+          {/* `shrink-0 whitespace-nowrap` na `<li>` (nie na <a>!) — `<li>`
+              jest tutaj flex itemem (bezpośrednim dzieckiem flex `<ul>`),
+              a nie `<a>` w środku. `shrink-0` zapobiega kurczeniu pinów
+              poniżej content width na ciasnym viewport (mobile), gdzie
+              flex algorithm domyślnie skraca itemy żeby zmieściły się w
+              container. `whitespace-nowrap` inherited do potomnego `<a>` —
+              chroni dodatkowo przed wrap'em tekstu wewnątrz pinu, gdyby
+              kiedyś flex layout się zmienił. */}
+          <li className="shrink-0 whitespace-nowrap">
             <Link
               href="/"
               aria-current={isHome ? "page" : undefined}
@@ -140,7 +149,7 @@ export function CategoryBar({ categories }: CategoryBarProps) {
           {categories.map((cat) => {
             const isActive = activeSlug === cat.slug;
             return (
-              <li key={cat.slug}>
+              <li key={cat.slug} className="shrink-0 whitespace-nowrap">
                 <Link
                   href={`/kategoria/${cat.slug}`}
                   aria-current={isActive ? "page" : undefined}
