@@ -65,7 +65,7 @@ export async function GET() {
   <atom:link href="${escapeXml(`${baseUrl}/feed.xml`)}" rel="self" type="application/rss+xml"/>
   <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
   <image>
-    <url>${escapeXml(`${baseUrl}/icon.png`)}</url>
+    <url>${escapeXml(`${baseUrl}/icon-512.png`)}</url>
     <title>${escapeXml(siteConfig.name)}</title>
     <link>${escapeXml(baseUrl)}</link>
   </image>

@@ -1,38 +1,27 @@
 "use client";
 
-import { useSyncExternalStore, useCallback } from "react";
 import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
-function getSnapshot(): boolean {
-  return document.documentElement.classList.contains("dark");
-}
-
-function getServerSnapshot(): boolean {
-  return false;
-}
-
-function subscribe(callback: () => void): () => void {
-  const observer = new MutationObserver(callback);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-  return () => observer.disconnect();
-}
-
+// CSS-only icon swap — both icons render, but Tailwind's `dark:` variant
+// (configured against the `.dark` class set by next-themes on <html>) shows
+// only the active one. No mount state, no useEffect, no hydration mismatch.
+// The button itself is `suppressHydrationWarning` because aria-label flips
+// based on resolvedTheme, which is only known on the client.
 export function ThemeToggle() {
-  const dark = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-
-  const toggle = useCallback(() => {
-    const next = !dark;
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  }, [dark]);
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   return (
     <button
-      onClick={toggle}
-      aria-label="Zmień motyw"
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={isDark ? "Włącz tryb jasny" : "Włącz tryb ciemny"}
+      suppressHydrationWarning
       className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
     >
-      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      <Sun className="size-4 hidden dark:block" aria-hidden="true" />
+      <Moon className="size-4 block dark:hidden" aria-hidden="true" />
     </button>
   );
 }

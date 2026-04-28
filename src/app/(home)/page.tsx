@@ -11,7 +11,15 @@ import { jsonLdScript } from "@/lib/jsonld";
 
 import { Metadata } from "next";
 
+// `title.absolute` bypasses the parent layout's `title.template` (`%s | AiFeed`).
+// Without it, an empty/string title on this page can render as "AiFeed | AiFeed"
+// because the template prepends the site name to the page title. Other pages
+// (kategoria/tag/artykul) keep using the template — only the home page needs
+// to opt out, since its full SEO title equals the brand-level fallback.
 export const metadata: Metadata = {
+  title: {
+    absolute: `${siteConfig.name} — Wiadomości AI, Badania i Raporty`,
+  },
   alternates: {
     canonical: "/",
   },

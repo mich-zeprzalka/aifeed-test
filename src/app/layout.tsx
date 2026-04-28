@@ -5,6 +5,7 @@ import { NewsTicker } from "@/components/layout/news-ticker";
 import { Footer } from "@/components/layout/footer";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
 import { CategoryBar } from "@/components/articles/category-bar";
+import { ThemeProvider } from "@/components/theme-provider";
 import { siteConfig } from "@/config/site";
 import { getCategories, getTickerArticles } from "@/lib/data";
 import { jsonLdScript } from "@/lib/jsonld";
@@ -37,7 +38,7 @@ const fontMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: `${siteConfig.name} — Wiadomości AI, Badania i Raporty`,
+    default: `${siteConfig.name} — Serwis z najnowszymi informacjami o AI`,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -103,7 +104,7 @@ export default async function RootLayout({
     "@type": "Organization",
     name: siteConfig.name,
     url: siteConfig.url,
-    logo: `${siteConfig.url}/icon.png`,
+    logo: `${siteConfig.url}/icon-512.png`,
     description: siteConfig.description,
   };
 
@@ -126,30 +127,42 @@ export default async function RootLayout({
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1c1d2e" />
 
         <script
-          dangerouslySetInnerHTML={{
-            __html: `try{const t=localStorage.getItem("theme"),d=window.matchMedia("(prefers-color-scheme:dark)").matches;if(t==="dark"||(t!=="light"&&d))document.documentElement.classList.add("dark")}catch(e){}`,
-          }}
-        />
-        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationJsonLd) }}
         />
       </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground">
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-background"
+        {/* shadcn-style ThemeProvider over next-themes. `attribute="class"`
+            adds/removes the `.dark` class on <html>; `defaultTheme="system"`
+            respects OS preference until the user toggles; `enableSystem`
+            allows the explicit "system" choice; `disableTransitionOnChange`
+            prevents jarring color transitions during theme switch. The
+            provider injects its own no-FOUC script — no inline script needed.
+
+            All app components live inside it so any descendant can use the
+            `useTheme()` hook. Telemetry sits outside so it doesn't depend on
+            theme context. */}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          Przejdź do treści
-        </a>
-        <ScrollToTop />
-        <NewsTicker items={tickerItems} />
-        <Header />
-        <CategoryBar categories={categories} />
-        <main id="main-content" className="flex-1">{children}</main>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-background"
+          >
+            Przejdź do treści
+          </a>
+          <NewsTicker items={tickerItems} />
+          <Header />
+          <CategoryBar categories={categories} />
+          <main id="main-content" className="flex-1">{children}</main>
+          <Footer />
+          <ScrollToTop />
+        </ThemeProvider>
         <GoogleAnalytics gaId="G-5SD17PTF0C" />
         <Analytics />
-        <Footer />
       </body>
     </html>
   );

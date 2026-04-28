@@ -131,7 +131,7 @@ export default async function ArticlePage({ params }: PageProps) {
       "@type": "Organization",
       name: siteConfig.name,
       url: siteConfig.url,
-      logo: { "@type": "ImageObject", url: `${siteConfig.url}/icon.png` },
+      logo: { "@type": "ImageObject", url: `${siteConfig.url}/icon-512.png` },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
     ...(article.tags.length > 0 && { keywords: article.tags.map((t) => t.name).join(", ") }),
