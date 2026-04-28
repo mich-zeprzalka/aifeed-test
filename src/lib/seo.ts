@@ -39,6 +39,13 @@ interface BasePageMetadataInput {
   ogType?: "website" | "article";
   /** Robots noindex+nofollow — używaj dla nieznalezionych zasobów */
   noindex?: boolean;
+  /**
+   * Konkretny social-share image dla tej strony. Gdy ustawiony, nadpisuje
+   * dziedziczony default z `app/opengraph-image.tsx` w `og:image`/`twitter:image`.
+   * Dla artykułów: przekazujemy `article.thumbnail_url`. Brak image → strona
+   * dziedziczy default brand card z root.
+   */
+  image?: { url: string; alt?: string };
 }
 
 interface ArticlePageMetadataInput extends BasePageMetadataInput {
@@ -72,6 +79,25 @@ export function buildPageMetadata(
   const ogType = input.ogType ?? "website";
   const isArticle = ogType === "article";
 
+  // Każda strona dostaje `og:image`/`twitter:image`. Custom image (np. artykuł
+  // z `thumbnail_url`) → konkretne zdjęcie z artykułu. Brak → fallback na
+  // `/opengraph-image` (file-convention route generujący default brand card,
+  // 1200×630 PNG z gradientem + nazwą serwisu).
+  //
+  // Ten fallback MUSI być ustawiany ręcznie. Powód: gdy strona ustawia własny
+  // `metadata.openGraph` (jak my przez seo.ts), Next.js robi shallow merge i
+  // NIE dokleja automatycznie `images` z file-convention `app/opengraph-image.tsx`.
+  // Bez tego defaultu strony bez własnego image (home/kategoria/tag/static) nie
+  // miałyby żadnego OG preview na social media.
+  const fallbackImage = { url: "/opengraph-image", alt: siteConfig.name };
+  const chosen = input.image ?? fallbackImage;
+  const imageObject = [{
+    url: chosen.url,
+    width: 1200,
+    height: 630,
+    alt: chosen.alt ?? input.title,
+  }];
+
   return {
     title: input.title,
     description,
@@ -86,6 +112,7 @@ export function buildPageMetadata(
       title: input.title,
       description,
       siteName: siteConfig.name,
+      images: imageObject,
       // Article-specific OG fields. TypeScript narrows by `type`.
       ...(isArticle && {
         publishedTime: (input as ArticlePageMetadataInput).publishedTime,
@@ -99,6 +126,7 @@ export function buildPageMetadata(
       card: "summary_large_image",
       title: input.title,
       description,
+      images: [chosen.url],
     },
     ...(input.noindex && {
       robots: { index: false, follow: false },
@@ -114,32 +142,20 @@ export function buildPageMetadata(
  * page.tsx ustawi go wprost przez `title.absolute`.
  */
 export function homeMetadata(): Metadata {
+  // Home używa `buildPageMetadata` jak wszystkie inne strony — różnica tylko
+  // w `title.absolute` (omija template `%s | AiFeed`). Dzięki temu home
+  // dziedziczy fallback OG image (default brand card) przez ten sam helper.
+  const base = buildPageMetadata({
+    title: siteConfig.name,
+    description: siteConfig.description,
+    path: "/",
+    ogType: "website",
+  });
+
   return {
-    // `title.absolute` ominięcie templatu `%s | AiFeed` — bez tego zostałby
-    // zwrócony "AiFeed | AiFeed" jeśli ktoś by ustawił title jako string.
-    // (Alternatywnie można nie ustawiać title i polegać na `title.default`
-    // z layoutu, ale jawne ustawienie tutaj robi z `homeMetadata` source of
-    // truth dla strony głównej i ułatwia debugowanie.)
+    ...base,
     title: {
       absolute: `${siteConfig.name} — Serwis z najnowszymi informacjami o AI`,
-    },
-    description: clampDescription(siteConfig.description),
-    alternates: {
-      canonical: "/",
-      types: RSS_ALTERNATE,
-    },
-    openGraph: {
-      type: "website",
-      locale: "pl_PL",
-      url: siteConfig.url,
-      title: siteConfig.name,
-      description: siteConfig.description,
-      siteName: siteConfig.name,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: siteConfig.name,
-      description: siteConfig.description,
     },
   };
 }
@@ -181,6 +197,12 @@ export function articleMetadata(
     modifiedTime: article.updated_at || article.published_at || undefined,
     section: article.category?.name,
     tags: article.tags?.map((t) => t.name),
+    // Social-share image = miniatura artykułu z DB (og:image scrape ze źródła
+    // lub AI-generated thumbnail). Brak miniatury → fallback na default brand
+    // card z `app/opengraph-image.tsx`.
+    image: article.thumbnail_url
+      ? { url: article.thumbnail_url, alt: article.title }
+      : undefined,
   });
 }
 
