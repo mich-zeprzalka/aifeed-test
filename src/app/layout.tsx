@@ -9,7 +9,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { siteConfig } from "@/config/site";
 import { getCategories, getTickerArticles } from "@/lib/data";
 import { jsonLdScript } from "@/lib/jsonld";
-import { GoogleAnalytics } from '@next/third-parties/google';
+import { cn } from "@/lib/utils";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
@@ -58,11 +59,14 @@ export const metadata: Metadata = {
   // populates both for the root and is inherited by every nested route that
   // doesn't define its own opengraph-image. Setting them manually would
   // duplicate (or override and lose the alt/size/contentType from the file
-  // convention). Same pattern as `app/artykul/[slug]/page.tsx`.
+  // convention). Per-route SEO (kategoria/tag/artykuł/static) follows the
+  // same pattern via the helpers in `src/lib/seo.ts`.
   openGraph: {
     type: "website",
     locale: "pl_PL",
-    url: siteConfig.url,
+    // Relative URL — `metadataBase` (above) prefixes it to the absolute origin.
+    // Lets us swap domains in env without touching this file.
+    url: "/",
     title: siteConfig.name,
     description: siteConfig.description,
     siteName: siteConfig.name,
@@ -102,6 +106,19 @@ export const viewport: Viewport = {
   ],
 };
 
+// Module-level constant — derived purely from `siteConfig`, no per-request
+// state. `sameAs` is intentionally omitted: it should only list verified,
+// owned social profiles (none yet). Pointing schema.org at 404s damages
+// structured-data trust signals — Google flags it.
+const ORGANIZATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: siteConfig.name,
+  url: siteConfig.url,
+  logo: `${siteConfig.url}/icon-512.png`,
+  description: siteConfig.description,
+} as const;
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -112,22 +129,10 @@ export default async function RootLayout({
     getCategories(),
   ]);
 
-  // `sameAs` should only list verified, owned social profiles. Until those
-  // accounts exist the field is omitted entirely — pointing schema.org at
-  // 404s damages structured-data trust signals (Google flags it).
-  const organizationJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: siteConfig.name,
-    url: siteConfig.url,
-    logo: `${siteConfig.url}/icon-512.png`,
-    description: siteConfig.description,
-  };
-
   return (
     <html
       lang="pl"
-      className={`${inter.variable} ${fontHeading.variable} ${fontMono.variable} antialiased`}
+      className={cn(inter.variable, fontHeading.variable, fontMono.variable, "antialiased")}
       suppressHydrationWarning
     >
       <head>
@@ -140,7 +145,7 @@ export default async function RootLayout({
 
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(ORGANIZATION_JSON_LD) }}
         />
       </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground">
