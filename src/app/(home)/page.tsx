@@ -134,7 +134,11 @@ export default async function HomePage() {
                 /* Layout A: Lead default card + side compact cards */
                 <div className="grid gap-6 lg:grid-cols-12">
                   <div className="lg:col-span-7">
-                    <ArticleCard article={lead} className="h-full" />
+                    {/* First category lead is the LCP candidate after the
+                        hero featured card — eager-load it so Next.js can
+                        preload the image and the browser doesn't wait for
+                        layout to discover it. */}
+                    <ArticleCard article={lead} className="h-full" priority={catIndex === 0} />
                   </div>
                   {side.length > 0 && (
                     <div className="flex flex-col gap-1 lg:col-span-5">
@@ -186,7 +190,12 @@ export default async function HomePage() {
               ) : (
                 /* Layout C: Featured wide card + grid below */
                 <div className="space-y-5">
-                  <ArticleCard article={lead} variant="featured" className="min-h-[240px] lg:min-h-[300px]" />
+                  <ArticleCard
+                    article={lead}
+                    variant="featured"
+                    className="min-h-[240px] lg:min-h-[300px]"
+                    priority={catIndex === 0}
+                  />
                   {side.length > 0 && (
                     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                       {side.map((article) => (

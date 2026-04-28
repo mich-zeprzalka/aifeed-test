@@ -7,15 +7,25 @@ interface ArticleCardProps {
   article: Article & { category: Category | null; tags: Tag[] };
   variant?: "default" | "featured" | "compact";
   className?: string;
+  /**
+   * Set on cards rendered above the fold. Forwards to `<Image priority />`,
+   * which makes Next.js skip lazy-loading and emit a `<link rel="preload">`
+   * for the image. Use sparingly — only the actual LCP candidate(s).
+   */
+  priority?: boolean;
 }
 
-export function ArticleCard({ article, variant = "default", className = "" }: ArticleCardProps) {
-  if (variant === "featured") return <FeaturedCard article={article} className={className} />;
+export function ArticleCard({ article, variant = "default", className = "", priority }: ArticleCardProps) {
+  // FeaturedCard defaults to priority=true (it's almost always the LCP — hero
+  // on home, lead on Layout C). DefaultCard defaults to false (lazy). Explicit
+  // `priority` overrides both. Using `??` here so a missing prop falls through
+  // to the variant's natural default rather than forcing `false`.
+  if (variant === "featured") return <FeaturedCard article={article} className={className} priority={priority ?? true} />;
   if (variant === "compact") return <CompactCard article={article} className={className} />;
-  return <DefaultCard article={article} className={className} />;
+  return <DefaultCard article={article} className={className} priority={priority ?? false} />;
 }
 
-function FeaturedCard({ article, className }: { article: ArticleCardProps["article"]; className: string }) {
+function FeaturedCard({ article, className, priority = true }: { article: ArticleCardProps["article"]; className: string; priority?: boolean }) {
   return (
     <Link
       href={`/artykul/${article.slug}`}
@@ -29,7 +39,7 @@ function FeaturedCard({ article, className }: { article: ArticleCardProps["artic
             fill
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
             sizes="(max-width: 768px) 100vw, 60vw"
-            priority
+            priority={priority}
             quality={85}
           />
         ) : (
@@ -72,7 +82,7 @@ function FeaturedCard({ article, className }: { article: ArticleCardProps["artic
   );
 }
 
-function DefaultCard({ article, className }: { article: ArticleCardProps["article"]; className: string }) {
+function DefaultCard({ article, className, priority = false }: { article: ArticleCardProps["article"]; className: string; priority?: boolean }) {
   return (
     <Link
       href={`/artykul/${article.slug}`}
@@ -86,6 +96,7 @@ function DefaultCard({ article, className }: { article: ArticleCardProps["articl
             fill
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
             sizes="(max-width: 768px) 100vw, 33vw"
+            priority={priority}
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50" />

@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactCompiler: true,
   images: {
+    // Next.js 16 requires every quality value used by `<Image quality={N}>`
+    // to be listed here — otherwise the build/runtime warns. We bump the
+    // hero/featured image to 85 (audit 4.9) and keep the default 75 for
+    // everything else.
+    qualities: [75, 85],
     remotePatterns: [
       // Supabase Storage
       { protocol: "https", hostname: "iwseooszjbafasmjdiki.supabase.co" },
