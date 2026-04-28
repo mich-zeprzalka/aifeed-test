@@ -74,10 +74,10 @@ export function CategoryBar({ categories }: CategoryBarProps) {
           <Link
             href="/"
             aria-current={isHome ? "page" : undefined}
-            className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`shrink-0 rounded-full px-4 py-1.5 text-sm transition-colors ${
               isHome
-                ? "bg-foreground text-background"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "bg-foreground text-background font-bold shadow-sm"
+                : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted"
             }`}
           >
             Wszystko
@@ -89,10 +89,10 @@ export function CategoryBar({ categories }: CategoryBarProps) {
                 key={cat.slug}
                 href={`/kategoria/${cat.slug}`}
                 aria-current={isActive ? "page" : undefined}
-                className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                className={`shrink-0 rounded-full px-4 py-1.5 text-sm transition-colors ${
                   isActive
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    ? "bg-foreground text-background font-bold shadow-sm"
+                    : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted"
                 }`}
               >
                 {cat.name}

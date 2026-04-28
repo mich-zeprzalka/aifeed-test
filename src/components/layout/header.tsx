@@ -116,10 +116,10 @@ export function Header() {
                     href="/"
                     onClick={() => setMobileOpen(false)}
                     aria-current={pathname === "/" ? "page" : undefined}
-                    className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                    className={`rounded-md px-3 py-2.5 text-sm transition-colors ${
                       pathname === "/"
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        ? "bg-foreground text-background font-bold"
+                        : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50"
                     }`}
                   >
                     Wszystko
@@ -133,9 +133,9 @@ export function Header() {
                         href={href}
                         onClick={() => setMobileOpen(false)}
                         aria-current={active ? "page" : undefined}
-                        className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${active
-                          ? "bg-muted text-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        className={`rounded-md px-3 py-2.5 text-sm transition-colors ${active
+                          ? "bg-foreground text-background font-bold"
+                          : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50"
                           }`}
                       >
                         {cat.name}
