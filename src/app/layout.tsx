@@ -125,7 +125,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const [tickerItems, categories] = await Promise.all([
-    getTickerArticles(10),
+    // 20 unikatów — marquee renderuje pojedynczy DOM (bez duplikacji), więc
+    // im więcej items, tym dłuższy cykl. Ale każdy item to dodatkowy <Link>
+    // w SSR HTML i w bundlu wysyłanym do klienta, stąd cap na 20.
+    getTickerArticles(20),
     getCategories(),
   ]);
 
