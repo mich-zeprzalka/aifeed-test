@@ -1,16 +1,14 @@
 import { Newspaper, Layers, Rss, Zap, Mail } from "lucide-react";
 import Link from "next/link";
-import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
+import { staticPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "O serwisie — AiFeed",
+export const metadata = staticPageMetadata({
+  title: "O serwisie",
   description:
     "AiFeed to magazyn informacyjny o sztucznej inteligencji w języku polskim. Dowiedz się, co znajdziesz w serwisie i jak go najlepiej wykorzystać.",
-  alternates: {
-    canonical: "/o-serwisie",
-  },
-};
+  path: "/o-serwisie",
+});
 
 export default function AboutPage() {
   return (

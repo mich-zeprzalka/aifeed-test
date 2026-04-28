@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { Hash } from "lucide-react";
 import { ArticleCard } from "@/components/articles/article-card";
+import { Breadcrumbs } from "@/components/articles/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getTagBySlug, getArticlesByTag } from "@/lib/data";
 import { siteConfig } from "@/config/site";
 import { jsonLdScript } from "@/lib/jsonld";
+import { tagMetadata, notFoundMetadata, buildItemListJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const revalidate = 300;
@@ -16,34 +18,8 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const tag = await getTagBySlug(slug);
-  if (!tag) {
-    return {
-      title: "Tag nie znaleziony",
-      robots: { index: false, follow: false },
-    };
-  }
-  const description = `Najnowsze artykuły oznaczone tagiem #${tag.name} — wiadomości, analizy i raporty AI. Czytaj na AiFeed.`;
-  return {
-    title: `#${tag.name} — AiFeed`,
-    description,
-    openGraph: {
-      title: `#${tag.name} — AiFeed`,
-      description,
-      type: "website",
-      url: `${siteConfig.url}/tag/${tag.slug}`,
-      siteName: siteConfig.name,
-      locale: "pl_PL",
-      images: [{ url: siteConfig.ogImage, width: 1200, height: 630, alt: siteConfig.name }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `#${tag.name} — AiFeed`,
-      description,
-    },
-    alternates: {
-      canonical: `/tag/${tag.slug}`,
-    },
-  };
+  if (!tag) return notFoundMetadata("Tag nie znaleziony");
+  return tagMetadata(tag);
 }
 
 export default async function TagPage({ params }: PageProps) {
@@ -53,23 +29,15 @@ export default async function TagPage({ params }: PageProps) {
 
   const articles = await getArticlesByTag(slug);
 
-  const collectionJsonLd = articles.length > 0 ? {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: `#${tag.name}`,
-    description: `Artykuły oznaczone tagiem #${tag.name}`,
-    url: `${siteConfig.url}/tag/${tag.slug}`,
-    mainEntity: {
-      "@type": "ItemList",
-      numberOfItems: articles.length,
-      itemListElement: articles.slice(0, 20).map((article, i) => ({
-        "@type": "ListItem",
-        position: i + 1,
-        url: `${siteConfig.url}/artykul/${article.slug}`,
-        name: article.title,
-      })),
-    },
-  } : null;
+  const collectionJsonLd = articles.length > 0
+    ? buildItemListJsonLd({
+        name: `#${tag.name}`,
+        description: `Artykuły oznaczone tagiem #${tag.name}`,
+        url: `${siteConfig.url}/tag/${tag.slug}`,
+        totalItems: articles.length,
+        items: articles.map((a) => ({ slug: a.slug, title: a.title })),
+      })
+    : null;
 
   return (
     <>
@@ -80,8 +48,17 @@ export default async function TagPage({ params }: PageProps) {
       />
     )}
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Breadcrumbs — spójność z kategorią. JSON-LD `BreadcrumbList`
+          generowane wewnątrz komponentu Breadcrumbs. */}
+      <Breadcrumbs
+        items={[
+          { label: "Strona główna", href: "/" },
+          { label: `#${tag.name}` },
+        ]}
+      />
+
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8 mt-3">
         <span className="mb-2 inline-block text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground">
           Tag
         </span>

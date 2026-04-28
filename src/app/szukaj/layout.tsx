@@ -1,20 +1,10 @@
-import type { Metadata } from "next";
+import { searchPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Wyszukiwarka",
-  description: "Przeszukaj artykuły AiFeed — wiadomości AI, modele, badania, raporty.",
-  alternates: {
-    canonical: "/szukaj",
-  },
-  // Search result pages have thin, query-dependent content. We let the
-  // canonical page stay discoverable but tell crawlers not to index the
-  // query-string variants — prevents Google from spawning entries for
-  // arbitrary search terms in the SERP.
-  robots: {
-    index: false,
-    follow: true,
-  },
-};
+// Search result pages have thin, query-dependent content. `searchPageMetadata`
+// sets `robots: { index: false, follow: true }` — canonical page stays
+// crawlable so internal links work, but Google won't spawn SERP entries for
+// arbitrary `?q=...` permutations.
+export const metadata = searchPageMetadata();
 
 export default function SearchLayout({ children }: { children: React.ReactNode }) {
   return children;

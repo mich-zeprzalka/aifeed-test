@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { getCategoryBySlug, getArticlesByCategoryPaginated } from "@/lib/data";
 import { siteConfig } from "@/config/site";
 import { jsonLdScript } from "@/lib/jsonld";
+import { categoryMetadata, notFoundMetadata, buildItemListJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const revalidate = 300;
@@ -18,37 +19,12 @@ interface PageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+  const [{ slug }, { page: pageParam }] = await Promise.all([params, searchParams]);
+  const pageNum = Math.max(1, parseInt(pageParam || "1", 10) || 1);
   const category = await getCategoryBySlug(slug);
-  if (!category) {
-    return {
-      title: "Kategoria nie znaleziona",
-      robots: { index: false, follow: false },
-    };
-  }
-  const description = `Najnowsze artykuły w kategorii ${category.name} — ${category.description || "wiadomości, analizy i raporty AI"}. Czytaj na AiFeed.`;
-  return {
-    title: `${category.name} — AiFeed`,
-    description,
-    openGraph: {
-      title: `${category.name} — AiFeed`,
-      description,
-      type: "website",
-      url: `${siteConfig.url}/kategoria/${category.slug}`,
-      siteName: siteConfig.name,
-      locale: "pl_PL",
-      images: [{ url: siteConfig.ogImage, width: 1200, height: 630, alt: siteConfig.name }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${category.name} — AiFeed`,
-      description,
-    },
-    alternates: {
-      canonical: `/kategoria/${category.slug}`,
-    },
-  };
+  if (!category) return notFoundMetadata("Kategoria nie znaleziona");
+  return categoryMetadata(category, pageNum);
 }
 
 export default async function CategoryPage({ params, searchParams }: PageProps) {
@@ -65,25 +41,26 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
   const { articles, page, totalPages, total, hasPrev, hasNext } = paginated;
 
-  const itemListJsonLd = articles.length > 0 ? {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: category.name,
-    numberOfItems: articles.length,
-    itemListElement: articles.map((article, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      url: `${siteConfig.url}/artykul/${article.slug}`,
-      name: article.title,
-    })),
-  } : null;
+  // Spójne `CollectionPage > ItemList` (taki sam wzorzec jak na stronie tagu).
+  // `numberOfItems` ustawiamy na pełną liczbę artykułów w kategorii (nie tylko
+  // w bieżącej stronie paginacji) — Google używa tego do sygnalizacji że
+  // kolekcja jest stronicowana.
+  const collectionJsonLd = articles.length > 0
+    ? buildItemListJsonLd({
+        name: category.name,
+        description: category.description || `Artykuły z kategorii ${category.name}`,
+        url: `${siteConfig.url}/kategoria/${category.slug}`,
+        totalItems: total,
+        items: articles.map((a) => ({ slug: a.slug, title: a.title })),
+      })
+    : null;
 
   return (
     <>
-      {itemListJsonLd && (
+      {collectionJsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: jsonLdScript(itemListJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(collectionJsonLd) }}
         />
       )}
 

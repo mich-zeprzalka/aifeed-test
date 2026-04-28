@@ -1,13 +1,11 @@
-import type { Metadata } from "next";
+import { staticPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Polityka Prywatności — AiFeed",
+export const metadata = staticPageMetadata({
+  title: "Polityka prywatności",
   description:
     "Polityka prywatności serwisu AiFeed. Dowiedz się, jakie dane zbieramy i jak je przetwarzamy.",
-  alternates: {
-    canonical: "/polityka-prywatnosci",
-  },
-};
+  path: "/polityka-prywatnosci",
+});
 
 export default function PrivacyPage() {
   return (

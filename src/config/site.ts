@@ -3,10 +3,6 @@ export const siteConfig = {
   description:
     "Twoje codzienne źródło wiadomości o sztucznej inteligencji, badaniach naukowych i nowościach z branży technologicznej.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://aifeed.pl",
-  // Resolved at runtime by the file-convention OG route at
-  // app/opengraph-image.tsx. Kept for layouts that still need a deterministic
-  // path, e.g. the RSS image and the manifest fallbacks.
-  ogImage: "/opengraph-image",
   // Empty until real social profiles exist. Once founded, fill in and they
   // automatically populate JSON-LD `Organization.sameAs` and the `via=`
   // parameter on Twitter/X share intents.

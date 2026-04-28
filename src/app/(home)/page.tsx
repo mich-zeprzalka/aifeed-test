@@ -8,22 +8,13 @@ import {
   getPopularTags,
 } from "@/lib/data";
 import { jsonLdScript } from "@/lib/jsonld";
+import { homeMetadata } from "@/lib/seo";
 
-import { Metadata } from "next";
-
-// `title.absolute` bypasses the parent layout's `title.template` (`%s | AiFeed`).
-// Without it, an empty/string title on this page can render as "AiFeed | AiFeed"
-// because the template prepends the site name to the page title. Other pages
-// (kategoria/tag/artykul) keep using the template — only the home page needs
-// to opt out, since its full SEO title equals the brand-level fallback.
-export const metadata: Metadata = {
-  title: {
-    absolute: `${siteConfig.name} — Wiadomości AI, Badania i Raporty`,
-  },
-  alternates: {
-    canonical: "/",
-  },
-};
+// Home metadata pochodzi z centralnego helpera `lib/seo.ts`. Używa
+// `title.absolute` żeby ominąć template z root layoutu (uniknięcie "AiFeed |
+// AiFeed"). Wszystkie inne strony (kategoria/tag/artykuł) używają template
+// poprzez wywołanie `categoryMetadata`/`tagMetadata`/`articleMetadata`.
+export const metadata = homeMetadata();
 
 export const revalidate = 300;
 

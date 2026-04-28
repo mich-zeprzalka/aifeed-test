@@ -1,0 +1,267 @@
+import type { Metadata } from "next";
+import { siteConfig } from "@/config/site";
+import type { Article, Category, Tag } from "@/types/database";
+
+/**
+ * Centralny helper SEO. Każda funkcja zwraca obiekt `Metadata` gotowy do
+ * eksportu z page.tsx. Cała wiedza o brandingowych defaultach (locale,
+ * siteName, twitter card type, robots dla 404) jest w tym jednym miejscu —
+ * page.tsx-y dostarczają tylko dane dynamiczne (tytuł kategorii, treść
+ * artykułu, etc.).
+ *
+ * Założenia:
+ * - `title` ZAWSZE bez sufixu " — AiFeed" / " | AiFeed". Template z root
+ *   layoutu (`%s | AiFeed`) sam dokleja brand. Tytuł `"AiFeed"` na child
+ *   page produkuje "AiFeed | AiFeed" (duplikacja); pomijamy.
+ * - `images` NIE jest ustawiane — file-convention `app/opengraph-image.tsx`
+ *   (i jego per-route nadpisania) dziedziczone do nested routes.
+ * - `canonical` zawsze relatywny — `metadataBase` w root layoucie prefiksuje
+ *   absolutny URL.
+ * - `description` ucinane do ~160 znaków na poziomie HTML preview limitu
+ *   Google. Funkcja `clampDescription` rozcina po słowie, nie w pół wyrazu.
+ */
+
+const DESC_MAX = 160;
+
+function clampDescription(input: string): string {
+  const trimmed = input.trim().replace(/\s+/g, " ");
+  if (trimmed.length <= DESC_MAX) return trimmed;
+  // Cut at last word boundary before the limit, leave room for ellipsis.
+  const slice = trimmed.slice(0, DESC_MAX - 1);
+  const lastSpace = slice.lastIndexOf(" ");
+  return (lastSpace > DESC_MAX * 0.6 ? slice.slice(0, lastSpace) : slice).trimEnd() + "…";
+}
+
+interface BasePageMetadataInput {
+  title: string;
+  description: string;
+  path: string;                 // Bez domeny, np. "/kategoria/badania"
+  ogType?: "website" | "article";
+  /** Robots noindex+nofollow — używaj dla nieznalezionych zasobów */
+  noindex?: boolean;
+}
+
+interface ArticlePageMetadataInput extends BasePageMetadataInput {
+  ogType: "article";
+  publishedTime?: string;
+  modifiedTime?: string;
+  section?: string;
+  tags?: string[];
+}
+
+/**
+ * RSS auto-discovery — `<link rel="alternate" type="application/rss+xml">` w
+ * <head>. Musi być w KAŻDYM `alternates` na każdej stronie. Powód: Next.js
+ * robi shallow merge metadanych — gdy child ustawia `alternates: { canonical }`,
+ * całe `alternates` z root layoutu jest zastępowane (a nie głęboko mergowane).
+ * Ustawiając tu jako stałą część `buildPageMetadata`, każda strona zachowuje
+ * RSS discovery niezależnie od własnego canonicala.
+ */
+const RSS_ALTERNATE = {
+  "application/rss+xml": [{ url: "/feed.xml", title: `${siteConfig.name} — RSS` }],
+};
+
+/**
+ * Główny builder. Wrappery niżej przekazują tu wartości specyficzne dla typu
+ * strony i nic poza tym.
+ */
+export function buildPageMetadata(
+  input: BasePageMetadataInput | ArticlePageMetadataInput
+): Metadata {
+  const description = clampDescription(input.description);
+  const ogType = input.ogType ?? "website";
+  const isArticle = ogType === "article";
+
+  return {
+    title: input.title,
+    description,
+    alternates: {
+      canonical: input.path,
+      types: RSS_ALTERNATE,
+    },
+    openGraph: {
+      type: ogType,
+      locale: "pl_PL",
+      url: `${siteConfig.url}${input.path}`,
+      title: input.title,
+      description,
+      siteName: siteConfig.name,
+      // Article-specific OG fields. TypeScript narrows by `type`.
+      ...(isArticle && {
+        publishedTime: (input as ArticlePageMetadataInput).publishedTime,
+        modifiedTime: (input as ArticlePageMetadataInput).modifiedTime,
+        authors: [siteConfig.url],
+        section: (input as ArticlePageMetadataInput).section,
+        tags: (input as ArticlePageMetadataInput).tags,
+      }),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: input.title,
+      description,
+    },
+    ...(input.noindex && {
+      robots: { index: false, follow: false },
+    }),
+  };
+}
+
+// ===================== WRAPPERY DLA KAŻDEGO TYPU STRONY =====================
+
+/**
+ * Strona główna. `title.absolute` w wywołaniu page.tsx omija template
+ * (uniknięcie "AiFeed | AiFeed"). Tu zwracamy zwykły metadata bez tytułu —
+ * page.tsx ustawi go wprost przez `title.absolute`.
+ */
+export function homeMetadata(): Metadata {
+  return {
+    // `title.absolute` ominięcie templatu `%s | AiFeed` — bez tego zostałby
+    // zwrócony "AiFeed | AiFeed" jeśli ktoś by ustawił title jako string.
+    // (Alternatywnie można nie ustawiać title i polegać na `title.default`
+    // z layoutu, ale jawne ustawienie tutaj robi z `homeMetadata` source of
+    // truth dla strony głównej i ułatwia debugowanie.)
+    title: {
+      absolute: `${siteConfig.name} — Serwis z najnowszymi informacjami o AI`,
+    },
+    description: clampDescription(siteConfig.description),
+    alternates: {
+      canonical: "/",
+      types: RSS_ALTERNATE,
+    },
+    openGraph: {
+      type: "website",
+      locale: "pl_PL",
+      url: siteConfig.url,
+      title: siteConfig.name,
+      description: siteConfig.description,
+      siteName: siteConfig.name,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: siteConfig.name,
+      description: siteConfig.description,
+    },
+  };
+}
+
+export function categoryMetadata(category: Category, page = 1): Metadata {
+  // Pagination canonical: page 1 → /kategoria/slug, page N → ?page=N. Każda
+  // strona ma własny canonical (Google 2024 — zamiast rel=prev/next).
+  const path = page > 1 ? `/kategoria/${category.slug}?page=${page}` : `/kategoria/${category.slug}`;
+  const baseDescription = category.description
+    ? `${category.description} Najnowsze artykuły z kategorii ${category.name} na ${siteConfig.name}.`
+    : `Najnowsze artykuły z kategorii ${category.name} — wiadomości i analizy AI na ${siteConfig.name}.`;
+
+  return buildPageMetadata({
+    title: page > 1 ? `${category.name} — strona ${page}` : category.name,
+    description: baseDescription,
+    path,
+    ogType: "website",
+  });
+}
+
+export function tagMetadata(tag: Tag): Metadata {
+  return buildPageMetadata({
+    title: `#${tag.name}`,
+    description: `Artykuły oznaczone tagiem #${tag.name} — wiadomości i analizy AI na ${siteConfig.name}.`,
+    path: `/tag/${tag.slug}`,
+    ogType: "website",
+  });
+}
+
+export function articleMetadata(
+  article: Article & { category?: { name: string } | null; tags?: { name: string }[] }
+): Metadata {
+  return buildPageMetadata({
+    title: article.title,
+    description: article.excerpt,
+    path: `/artykul/${article.slug}`,
+    ogType: "article",
+    publishedTime: article.published_at || undefined,
+    modifiedTime: article.updated_at || article.published_at || undefined,
+    section: article.category?.name,
+    tags: article.tags?.map((t) => t.name),
+  });
+}
+
+export function notFoundMetadata(label: string): Metadata {
+  return {
+    title: label,
+    robots: { index: false, follow: false },
+  };
+}
+
+/**
+ * Statyczne strony informacyjne: /o-serwisie, /polityka-prywatnosci, etc.
+ * Tytuł czysty (template z layoutu dokleja brand), `description` clamp'owany,
+ * canonical absolutny, RSS discovery zachowane.
+ */
+export function staticPageMetadata(input: {
+  title: string;
+  description: string;
+  path: string;
+}): Metadata {
+  return buildPageMetadata({
+    title: input.title,
+    description: input.description,
+    path: input.path,
+    ogType: "website",
+  });
+}
+
+/**
+ * Strona wyszukiwarki — `noindex` (cienki content, query-dependent), ale
+ * `follow: true` żeby crawler mógł przejść z linków. Zachowuje RSS discovery.
+ */
+export function searchPageMetadata(): Metadata {
+  return {
+    title: "Wyszukiwarka",
+    description: clampDescription(
+      `Przeszukaj artykuły ${siteConfig.name} — wiadomości AI, modele, badania, raporty.`
+    ),
+    alternates: {
+      canonical: "/szukaj",
+      types: RSS_ALTERNATE,
+    },
+    robots: {
+      index: false,
+      follow: true,
+    },
+  };
+}
+
+// ===================== JSON-LD HELPERS =====================
+
+/**
+ * Spójny `CollectionPage` + zagnieżdżony `ItemList` dla list artykułów
+ * (kategoria + tag używają tego samego). `numberOfItems` to **całkowita**
+ * liczba artykułów w kolekcji (nie tylko w aktualnej slice'ie), co pozwala
+ * Google poprawnie pokazać paginację w rich results.
+ */
+export function buildItemListJsonLd(params: {
+  name: string;
+  description: string;
+  url: string;
+  /** Pełna liczba elementów w kolekcji (nie tylko w listElements) */
+  totalItems: number;
+  /** Items wyświetlone na stronie (max ~20 — Google limit) */
+  items: Array<{ slug: string; title: string }>;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: params.name,
+    description: params.description,
+    url: params.url,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: params.totalItems,
+      itemListElement: params.items.slice(0, 20).map((article, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: `${siteConfig.url}/artykul/${article.slug}`,
+        name: article.title,
+      })),
+    },
+  };
+}

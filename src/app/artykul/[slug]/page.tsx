@@ -12,6 +12,7 @@ import { TableOfContents } from "@/components/articles/table-of-contents";
 import { siteConfig } from "@/config/site";
 import { jsonLdScript } from "@/lib/jsonld";
 import { slugifyHeading } from "@/lib/heading-id";
+import { articleMetadata, notFoundMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -27,46 +28,8 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const article = await getCachedArticle(slug);
-  if (!article) {
-    return {
-      title: "Artykuł nie znaleziony",
-      robots: { index: false, follow: false },
-    };
-  }
-
-  // OG image intentionally NOT set in metadata — the file-convention route at
-  // app/artykul/[slug]/opengraph-image.tsx generates a branded card from the
-  // article title + category + reading time, which is richer than the source
-  // thumbnail. Setting `images` here would override that file convention.
-  const tagNames = article.tags.map((t) => t.name);
-
-  return {
-    title: article.title,
-    description: article.excerpt,
-    keywords: tagNames.length > 0 ? tagNames : undefined,
-    authors: [{ name: siteConfig.name, url: siteConfig.url }],
-    openGraph: {
-      title: article.title,
-      description: article.excerpt,
-      type: "article",
-      url: `${siteConfig.url}/artykul/${article.slug}`,
-      siteName: siteConfig.name,
-      locale: "pl_PL",
-      publishedTime: article.published_at || undefined,
-      modifiedTime: article.updated_at || article.published_at || undefined,
-      authors: [siteConfig.url],
-      section: article.category?.name,
-      tags: tagNames,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: article.title,
-      description: article.excerpt,
-    },
-    alternates: {
-      canonical: `/artykul/${article.slug}`,
-    },
-  };
+  if (!article) return notFoundMetadata("Artykuł nie znaleziony");
+  return articleMetadata(article);
 }
 
 export default async function ArticlePage({ params }: PageProps) {
