@@ -1,13 +1,21 @@
-import { getSitemapArticles, getCategories, getAllTags } from "@/lib/data";
+import {
+  getSitemapArticles,
+  getCategories,
+  getAllTags,
+  getCategoriesLastModified,
+  getTagsLastModified,
+} from "@/lib/data";
 import { siteConfig } from "@/config/site";
 import type { MetadataRoute } from "next";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteConfig.url;
-  const [articles, categories, tags] = await Promise.all([
+  const [articles, categories, tags, categoryMods, tagMods] = await Promise.all([
     getSitemapArticles(5000),
     getCategories(),
     getAllTags(),
+    getCategoriesLastModified(),
+    getTagsLastModified(),
   ]);
 
   const articleUrls = articles.map((article) => ({
@@ -17,25 +25,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: article.is_featured ? 0.9 : 0.7,
   }));
 
+  // Use the most recent article in the category as `lastModified`. Falls back
+  // to the request time when the category has no published articles yet, so
+  // the URL is still discoverable.
   const categoryUrls = categories.map((cat) => ({
     url: `${baseUrl}/kategoria/${cat.slug}`,
-    lastModified: new Date(),
+    lastModified: categoryMods[cat.slug] ?? new Date(),
     changeFrequency: "daily" as const,
     priority: 0.8,
   }));
 
   const tagUrls = tags.map((tag) => ({
     url: `${baseUrl}/tag/${tag.slug}`,
-    lastModified: new Date(),
+    lastModified: tagMods[tag.slug] ?? new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.5,
   }));
 
+  // Home `lastModified` derived from the newest article so a crawl reflects
+  // actual content change, not the time the sitemap was generated.
+  const newestArticle = articles[0]?.updated_at;
+
   return [
     {
       url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "hourly",
+      lastModified: newestArticle ? new Date(newestArticle) : new Date(),
+      changeFrequency: "daily",
       priority: 1,
     },
     {

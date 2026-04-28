@@ -54,7 +54,12 @@ export default async function HomePage() {
 
   return (
     <>
-      <h1 className="sr-only">AiFeed — Wiadomości AI, Badania i Raporty</h1>
+      {/* sr-only h1 — owner decision: visible hero copy doesn't fit the
+          magazine layout. Crawlers still get a strong h1 signal; sighted
+          readers go straight from sticky header into the hero card (which
+          uses h2 for the article title). Revisit if a brand hero is
+          designed later. */}
+      <h1 className="sr-only">AiFeed — wiadomości AI, badania i raporty po polsku</h1>
 
       {/* Trending Tags */}
       {trendingTags.length > 0 && (
@@ -90,7 +95,11 @@ export default async function HomePage() {
             {sideFeatures.length > 0 && (
               <div className="flex flex-col lg:col-span-5 xl:col-span-4 h-full border border-border/50 bg-card rounded-xl divide-y divide-border/50">
                 {sideFeatures.map((article, i) => (
-                  <div key={article.id} className={`animate-fade-in-up stagger-${i + 2} flex-1 p-3`}>
+                  <div
+                    key={article.id}
+                    className="animate-fade-in-up flex-1 p-3"
+                    style={{ "--stagger": i + 2 } as React.CSSProperties}
+                  >
                     <ArticleCard article={article} variant="compact" className="h-full hover:bg-transparent hover:border-transparent" />
                   </div>
                 ))}
@@ -138,7 +147,7 @@ export default async function HomePage() {
               ) : catIndex % 3 === 1 ? (
                 /* Layout B: 4-column compact grid */
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                  {cat.articles.slice(0, 4).map((article) => (
+                  {cat.articles.slice(0, 4).map((article, idx) => (
                     <Link
                       key={article.id}
                       href={`/artykul/${article.slug}`}
@@ -152,6 +161,7 @@ export default async function HomePage() {
                             fill
                             className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                             sizes="(max-width: 768px) 50vw, 25vw"
+                            loading={idx === 0 ? "eager" : "lazy"}
                           />
                         ) : (
                           <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50" />
@@ -161,9 +171,14 @@ export default async function HomePage() {
                         <h3 className="text-sm font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300">
                           {article.title}
                         </h3>
-                        <p className="mt-2 text-xs font-mono text-muted-foreground">
-                          {new Date(article.published_at || "").toLocaleDateString("pl-PL", { day: "numeric", month: "long" })}
-                        </p>
+                        {article.published_at && (
+                          <time
+                            dateTime={article.published_at}
+                            className="mt-2 text-xs font-mono text-muted-foreground block"
+                          >
+                            {new Date(article.published_at).toLocaleDateString("pl-PL", { day: "numeric", month: "long" })}
+                          </time>
+                        )}
                       </div>
                     </Link>
                   ))}

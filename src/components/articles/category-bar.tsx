@@ -20,15 +20,22 @@ export function CategoryBar({ categories }: CategoryBarProps) {
   const isHidden = pathname.startsWith("/artykul/");
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  // Restore scroll position on mount; persist on scroll.
+  // Restore scroll position on mount; persist on scroll. sessionStorage
+  // throws QuotaExceededError in Safari private mode and SecurityError when
+  // disabled by site settings — wrapped so a private-tab user never breaks
+  // the bar entirely.
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
 
-    const saved = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-    if (saved) {
-      const parsed = Number(saved);
-      if (Number.isFinite(parsed)) el.scrollLeft = parsed;
+    try {
+      const saved = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      if (saved) {
+        const parsed = Number(saved);
+        if (Number.isFinite(parsed)) el.scrollLeft = parsed;
+      }
+    } catch {
+      // sessionStorage unavailable — degrade gracefully, no scroll restore.
     }
 
     let frame = 0;
@@ -36,7 +43,11 @@ export function CategoryBar({ categories }: CategoryBarProps) {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        sessionStorage.setItem(SCROLL_STORAGE_KEY, String(el.scrollLeft));
+        try {
+          sessionStorage.setItem(SCROLL_STORAGE_KEY, String(el.scrollLeft));
+        } catch {
+          // ignore — scroll position is non-critical
+        }
       });
     };
 
@@ -47,14 +58,12 @@ export function CategoryBar({ categories }: CategoryBarProps) {
     };
   }, []);
 
-  // Hidden on single article pages — the article surface should stay focused
-  // on the content. Everywhere else the bar stays sticky-adjacent for fast
-  // navigation between categories.
+  // Hidden on single article pages — owner decision: the article surface
+  // stays focused on the content. Use nav + aria-current="page" rather than
+  // role="tablist"/role="tab" (tabs imply an ARIA-associated tabpanel; these
+  // links navigate to a new route, which is nav semantics, not tabs).
   if (isHidden) return null;
 
-  // Use nav + aria-current="page" rather than role="tablist"/role="tab".
-  // Tabs imply an ARIA-associated tabpanel; these links navigate to a new
-  // route, which is nav semantics, not tabs.
   return (
     <nav aria-label="Kategorie" className="border-b border-border/40 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

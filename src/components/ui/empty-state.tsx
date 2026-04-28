@@ -13,7 +13,7 @@ export function EmptyState({ icon: Icon, title, description, actionLabel, action
   return (
     <div className="py-24 text-center">
       {Icon && (
-        <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
+        <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-muted" aria-hidden="true">
           <Icon className="size-5 text-muted-foreground" />
         </div>
       )}

@@ -83,10 +83,10 @@ export function Footer() {
         <hr className="my-8 border-border/40" />
 
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-          <p className="text-xs text-muted-foreground/60">
-            &copy; {new Date().getFullYear()} {siteConfig.name}. Wszelkie prawa zastrzeżone.
+          <p className="text-xs text-muted-foreground/80">
+            &copy; <time dateTime={String(new Date().getFullYear())}>{new Date().getFullYear()}</time> {siteConfig.name}. Wszelkie prawa zastrzeżone.
           </p>
-          <p className="text-xs text-muted-foreground/60">
+          <p className="text-xs text-muted-foreground/80">
             Codzienna porcja AI — szybko i bez szumu.
           </p>
         </div>

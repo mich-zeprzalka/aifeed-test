@@ -21,7 +21,8 @@ export default function PrivacyPage() {
           Polityka Prywatności
         </h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Ostatnia aktualizacja: 20 kwietnia 2026 r.
+          Ostatnia aktualizacja:{" "}
+          <time dateTime="2026-04-20">20&nbsp;kwietnia 2026&nbsp;r.</time>
         </p>
       </header>
 

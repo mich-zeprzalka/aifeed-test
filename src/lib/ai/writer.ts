@@ -1,4 +1,5 @@
 import { ARTICLE_SYSTEM_PROMPT, ARTICLE_USER_PROMPT } from "./prompts";
+import { polishTypography } from "../typography";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -193,12 +194,20 @@ export async function generateArticle(
 
   // Split content and metadata — flexible delimiter matching
   const meta = extractMeta(responseText);
-  const content = normalizeMarkdown(meta._content);
+  // Two-step pipeline: normalizeMarkdown handles structural fixes (lists,
+  // headings, blank lines), polishTypography handles cosmetic Polish rules
+  // (NBSP after one-letter prepositions, en/em-dash, „cudzysłowy"). Splitting
+  // them keeps the structural pass deterministic and individually testable.
+  const content = polishTypography(normalizeMarkdown(meta._content));
+  const excerpt = meta.excerpt
+    ? polishTypography(meta.excerpt)
+    : content.slice(0, 200);
+  const title = meta.title ? polishTypography(meta.title) : topic;
 
   return {
     content,
-    title: meta.title || topic,
-    excerpt: meta.excerpt || content.slice(0, 200),
+    title,
+    excerpt,
     category: meta.category || "modele-ai",
     tags: meta.tags || [],
     reading_time: meta.reading_time || Math.ceil(content.split(/\s+/).length / 200),

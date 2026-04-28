@@ -76,7 +76,10 @@ export async function GET() {
   return new Response(rss, {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "s-maxage=3600, stale-while-revalidate",
+      // `public` is explicit so any CDN between Vercel and the reader caches
+      // the response. Without it, only Vercel's own cache benefits and shared
+      // caches (Cloudflare, etc.) treat this as private.
+      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
     },
   });
 }

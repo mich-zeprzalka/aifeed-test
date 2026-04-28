@@ -39,7 +39,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
         dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
       <Breadcrumb>
-        <BreadcrumbList className="text-[12px] font-mono text-muted-foreground/70">
+        <BreadcrumbList className="text-[12px] font-mono text-muted-foreground/85">
           {items.map((item, i) => (
             <Fragment key={i}>
               {i > 0 && (

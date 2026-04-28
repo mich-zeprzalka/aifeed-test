@@ -34,13 +34,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  // Google recommends providing explicit OG image dimensions so crawlers don't
-  // have to fetch the image to determine size. 1200×630 is the universal
-  // recommendation for `summary_large_image`.
-  const ogImage = article.thumbnail_url
-    ? { url: article.thumbnail_url, width: 1200, height: 630, alt: article.title }
-    : { url: siteConfig.ogImage, width: 1200, height: 630, alt: siteConfig.name };
-
+  // OG image intentionally NOT set in metadata — the file-convention route at
+  // app/artykul/[slug]/opengraph-image.tsx generates a branded card from the
+  // article title + category + reading time, which is richer than the source
+  // thumbnail. Setting `images` here would override that file convention.
   const tagNames = article.tags.map((t) => t.name);
 
   return {
@@ -60,13 +57,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       authors: [siteConfig.url],
       section: article.category?.name,
       tags: tagNames,
-      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title: article.title,
       description: article.excerpt,
-      images: [ogImage.url],
     },
     alternates: {
       canonical: `/artykul/${article.slug}`,
@@ -104,9 +99,21 @@ export default async function ArticlePage({ params }: PageProps) {
     { label: article.title },
   ];
 
+  // Word count from the actual content body. Markdown punctuation gets
+  // collapsed before counting so the number reflects the reader's perceived
+  // length, not the raw markdown char count.
+  const wordCount = article.content
+    ? article.content
+        .replace(/[#*_>`~\[\]()!-]/g, " ")
+        .split(/\s+/)
+        .filter(Boolean).length
+    : undefined;
+
   // NewsArticle JSON-LD — Google's News structured data spec.
   // `image` as an array of URLs (recommended over a single string), skipped
   // entirely when no thumbnail is available (better than an empty field).
+  // `wordCount`, `articleBody` (excerpt), and `speakable` strengthen Google's
+  // News rich-result eligibility and improve voice-assistant rendering.
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -128,6 +135,12 @@ export default async function ArticlePage({ params }: PageProps) {
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
     ...(article.tags.length > 0 && { keywords: article.tags.map((t) => t.name).join(", ") }),
+    ...(wordCount && { wordCount }),
+    articleBody: article.excerpt,
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: ["h1", ".article-excerpt"],
+    },
     inLanguage: "pl-PL",
     isAccessibleForFree: true,
     ...(article.category?.name && { articleSection: article.category.name }),
@@ -153,15 +166,18 @@ export default async function ArticlePage({ params }: PageProps) {
 
           {/* Meta */}
           <div className="mb-5 flex items-center gap-3">
-            {publishedDate && (
-              <span className="flex items-center gap-1.5 text-xs font-mono tracking-wide text-muted-foreground">
-                <Calendar className="size-3" />
+            {publishedDate && article.published_at && (
+              <time
+                dateTime={article.published_at}
+                className="flex items-center gap-1.5 text-xs font-mono tracking-wide text-muted-foreground"
+              >
+                <Calendar className="size-3" aria-hidden="true" />
                 {publishedDate}
-              </span>
+              </time>
             )}
-            <span className="size-0.5 rounded-full bg-muted-foreground/30" />
+            <span className="size-0.5 rounded-full bg-muted-foreground/30" aria-hidden="true" />
             <span className="flex items-center gap-1.5 text-xs font-mono tracking-wide text-muted-foreground">
-              <Clock className="size-3" />
+              <Clock className="size-3" aria-hidden="true" />
               {article.reading_time} min czytania
             </span>
           </div>
@@ -329,6 +345,17 @@ export default async function ArticlePage({ params }: PageProps) {
             </div>
           </div>
         )}
+
+        {/* Keyboard skip-link back to the primary navigation. Visible only on
+            focus — sighted readers don't need it (header is sticky), but
+            screen-reader and keyboard-only users get a short path back without
+            scrolling through the article in reverse. */}
+        <a
+          href="#primary-nav"
+          className="sr-only focus:not-sr-only focus:fixed focus:bottom-4 focus:left-1/2 focus:-translate-x-1/2 focus:z-[100] focus:rounded-lg focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-background"
+        >
+          Powrót do nawigacji
+        </a>
 
         {/* Related articles */}
         {relatedArticles.length > 0 && (

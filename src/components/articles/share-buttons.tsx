@@ -16,6 +16,7 @@ const getNativeShare = () =>
 const getNativeShareServer = () => false;
 
 function extractTwitterHandle(twitterUrl: string): string | null {
+  if (!twitterUrl) return null;
   const match = twitterUrl.match(/(?:twitter\.com|x\.com)\/([^/?#]+)/i);
   return match ? match[1] : null;
 }
@@ -41,20 +42,20 @@ export function ShareButtons({ url, title }: ShareButtonsProps) {
     };
   }, [url, title]);
 
+  const [copyError, setCopyError] = useState(false);
   const handleCopyLink = async () => {
+    // navigator.clipboard.writeText is supported by every modern browser back
+    // to 2018 — the document.execCommand fallback we used to ship is itself
+    // deprecated and shouldn't be the recovery path. If the API genuinely
+    // isn't available (HTTP context, restrictive CSP), surface a hint to the
+    // user instead of silently failing.
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      const input = document.createElement("input");
-      input.value = url;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
-      document.body.removeChild(input);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopyError(true);
+      setTimeout(() => setCopyError(false), 3000);
     }
   };
 
@@ -114,21 +115,30 @@ export function ShareButtons({ url, title }: ShareButtonsProps) {
         type="button"
         onClick={handleCopyLink}
         className={buttonClass}
-        aria-label={copied ? "Skopiowano link" : "Kopiuj link"}
-        title={copied ? "Skopiowano" : "Kopiuj link"}
+        aria-label={
+          copyError
+            ? "Nie udało się skopiować — skopiuj URL ręcznie z paska adresu"
+            : copied
+              ? "Skopiowano link"
+              : "Kopiuj link"
+        }
+        title={copyError ? "Skopiuj ręcznie z paska adresu" : copied ? "Skopiowano" : "Kopiuj link"}
       >
         {copied ? (
-          <Check className="size-3 text-green-500" aria-hidden="true" />
+          <Check className="size-3 text-green-600 dark:text-green-400" aria-hidden="true" />
         ) : (
           <Link2 className="size-3.5" aria-hidden="true" />
         )}
       </button>
 
       {canNativeShare && (
+        // Native share also exists on Chrome desktop since 2024 — gate purely
+        // on `navigator.share` availability, not viewport size. Hidden only
+        // when the API itself is missing.
         <button
           type="button"
           onClick={handleNativeShare}
-          className={`${buttonClass} sm:hidden`}
+          className={buttonClass}
           aria-label="Udostępnij przez system"
           title="Udostępnij"
         >

@@ -30,6 +30,7 @@ function FeaturedCard({ article, className }: { article: ArticleCardProps["artic
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
             sizes="(max-width: 768px) 100vw, 60vw"
             priority
+            quality={85}
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-primary/20 via-accent/10 to-muted" />
@@ -37,11 +38,19 @@ function FeaturedCard({ article, className }: { article: ArticleCardProps["artic
       </div>
       <div className="gradient-overlay absolute inset-0 z-10" />
       <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7 z-20 flex flex-col justify-end h-full items-start">
-        {article.category && (
-          <span className="mb-2 rounded-md px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-widest text-white/90 bg-white/15 backdrop-blur-md border border-white/10">
-            {article.category.name}
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          {/* Marker showing why this card is at the top of the page. Distinct
+              from the category pill so a reader instantly sees "polecany" vs.
+              "kategoria" without having to read both labels. */}
+          <span className="rounded-md px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-widest text-white bg-primary/90 border border-primary/40">
+            Polecane
           </span>
-        )}
+          {article.category && (
+            <span className="rounded-md px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-widest text-white/90 bg-white/15 backdrop-blur-md border border-white/10">
+              {article.category.name}
+            </span>
+          )}
+        </div>
         <h2 className="text-xl sm:text-2xl lg:text-3xl text-white line-clamp-3">
           {article.title}
         </h2>
@@ -54,7 +63,9 @@ function FeaturedCard({ article, className }: { article: ArticleCardProps["artic
             {article.reading_time} min
           </span>
           <span className="size-0.5 rounded-full bg-white/30" />
-          <span>{formatDate(article.published_at)}</span>
+          {article.published_at ? (
+            <time dateTime={article.published_at}>{formatDate(article.published_at)}</time>
+          ) : null}
         </div>
       </div>
     </Link>
@@ -98,7 +109,9 @@ function DefaultCard({ article, className }: { article: ArticleCardProps["articl
             {article.reading_time} min
           </span>
           <span className="size-0.5 rounded-full bg-muted-foreground/30" />
-          <span>{formatDate(article.published_at)}</span>
+          {article.published_at ? (
+            <time dateTime={article.published_at}>{formatDate(article.published_at)}</time>
+          ) : null}
         </div>
       </div>
     </Link>
@@ -127,19 +140,36 @@ function CompactCard({ article, className }: { article: ArticleCardProps["articl
         <h4 className="text-sm font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 pr-2">
           {article.title}
         </h4>
-        <span className="mt-2 text-[10px] font-mono text-muted-foreground">
-          {formatDate(article.published_at)}
-        </span>
+        <div className="mt-2 flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Clock className="size-2.5" aria-hidden="true" />
+            {article.reading_time} min
+          </span>
+          {article.published_at && (
+            <>
+              <span className="size-0.5 rounded-full bg-muted-foreground/30" aria-hidden="true" />
+              <time dateTime={article.published_at}>
+                {formatDate(article.published_at)}
+              </time>
+            </>
+          )}
+        </div>
       </div>
     </Link>
   );
 }
 
+// Drop the year for articles published in the current calendar year. Anything
+// older than that gets the year back so a 2024 piece doesn't read as "20 kwietnia"
+// in 2026 and confuse readers about freshness.
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("pl-PL", {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const showYear = d.getFullYear() !== now.getFullYear();
+  return d.toLocaleDateString("pl-PL", {
     day: "numeric",
     month: "long",
-    year: "numeric",
+    ...(showYear && { year: "numeric" }),
   });
 }

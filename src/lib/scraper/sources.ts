@@ -131,4 +131,4 @@ export const RSS_SOURCES: readonly RSSSource[] = [
     url: "https://hnrss.org/newest?q=AI+OR+LLM+OR+GPT+OR+Claude&points=50",
     category: "narzedzia",
   },
-] as const;
+];

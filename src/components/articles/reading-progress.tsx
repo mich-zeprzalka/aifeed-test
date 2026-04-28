@@ -56,7 +56,10 @@ export function ReadingProgress() {
       className="fixed top-0 left-0 right-0 z-[60] h-[3px] bg-transparent pointer-events-none"
     >
       <div
-        className="h-full bg-primary transition-[width] duration-150 ease-out"
+        // `motion-reduce` disables the transition for users who set
+        // `prefers-reduced-motion: reduce` — the progress bar still updates,
+        // it just snaps to the new position rather than animating.
+        className="h-full bg-primary transition-[width] duration-150 ease-out motion-reduce:transition-none"
         style={{ width: `${progress}%` }}
       />
     </div>

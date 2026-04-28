@@ -268,47 +268,22 @@ h6 {
 
 .animate-fade-in-up {
   animation: fade-in-up 0.4s ease-out both;
+  animation-delay: calc(var(--stagger, 0) * 40ms);
 }
 
-.stagger-1 {
-  animation-delay: 0.04s;
-}
-
-.stagger-2 {
-  animation-delay: 0.08s;
-}
-
-.stagger-3 {
-  animation-delay: 0.12s;
-}
-
-.stagger-4 {
-  animation-delay: 0.16s;
-}
-
-.stagger-5 {
-  animation-delay: 0.20s;
-}
-
-.stagger-6 {
-  animation-delay: 0.24s;
-}
-
-.stagger-7 {
-  animation-delay: 0.28s;
-}
-
-.stagger-8 {
-  animation-delay: 0.32s;
-}
-
-.stagger-9 {
-  animation-delay: 0.36s;
-}
-
-.stagger-10 {
-  animation-delay: 0.40s;
-}
+/* Legacy stagger-N classes kept for backward compatibility — new code should
+   set `style={{ "--stagger": i }}` instead. The explicit fallback delay keeps
+   any forgotten old usage rendering correctly. */
+.stagger-1 { --stagger: 1; }
+.stagger-2 { --stagger: 2; }
+.stagger-3 { --stagger: 3; }
+.stagger-4 { --stagger: 4; }
+.stagger-5 { --stagger: 5; }
+.stagger-6 { --stagger: 6; }
+.stagger-7 { --stagger: 7; }
+.stagger-8 { --stagger: 8; }
+.stagger-9 { --stagger: 9; }
+.stagger-10 { --stagger: 10; }
 
 @keyframes pulse-soft {
 

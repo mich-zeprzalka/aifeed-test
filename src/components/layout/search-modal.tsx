@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search, Loader2, ArrowRight } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Search, Loader2, ArrowRight, Clock, X } from "lucide-react";
 import Link from "next/link";
 import {
   Dialog,
@@ -23,10 +23,59 @@ interface SearchModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const RECENT_KEY = "aifeed:recent-searches";
+const MAX_RECENT = 5;
+
+function readRecent(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((q): q is string => typeof q === "string").slice(0, MAX_RECENT);
+  } catch {
+    return [];
+  }
+}
+
+function pushRecent(q: string): string[] {
+  const trimmed = q.trim();
+  if (!trimmed) return readRecent();
+  const current = readRecent().filter((existing) => existing !== trimmed);
+  const next = [trimmed, ...current].slice(0, MAX_RECENT);
+  try {
+    window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    // localStorage unavailable (private mode, quota) — recent is non-critical
+  }
+  return next;
+}
+
 export function SearchModal({ open, onOpenChange }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
+
+  // Load recent on first open. Reading on every render would force a re-read
+  // of localStorage even when the modal is closed.
+  useEffect(() => {
+    if (open) setRecent(readRecent());
+  }, [open]);
+
+  const commitRecent = useCallback((q: string) => {
+    setRecent(pushRecent(q));
+  }, []);
+
+  const clearRecent = useCallback(() => {
+    try {
+      window.localStorage.removeItem(RECENT_KEY);
+    } catch {
+      // ignore
+    }
+    setRecent([]);
+  }, []);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -96,18 +145,68 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
 
         <div aria-live="polite" className="max-h-[300px] sm:max-h-[400px] overflow-y-auto no-scrollbar pb-2">
           {query.trim() === "" ? (
-            <div className="px-6 py-10 text-center">
-              <p className="text-sm text-muted-foreground">
-                Zacznij pisać aby odnaleźć tematy o sztucznej inteligencji...
-              </p>
-            </div>
+            recent.length > 0 ? (
+              <div className="py-2">
+                <div className="flex items-center justify-between px-4 py-2">
+                  <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+                    Ostatnie wyszukiwania
+                  </p>
+                  <button
+                    type="button"
+                    onClick={clearRecent}
+                    className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70 hover:text-foreground transition-colors"
+                  >
+                    Wyczyść
+                  </button>
+                </div>
+                <ul className="flex flex-col">
+                  {recent.map((q) => (
+                    <li key={q} className="flex items-center">
+                      <button
+                        type="button"
+                        onClick={() => setQuery(q)}
+                        className="flex-1 flex items-center gap-3 px-4 py-2 text-left text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                      >
+                        <Clock className="size-3.5 shrink-0 text-muted-foreground/60" aria-hidden="true" />
+                        <span className="truncate">{q}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = recent.filter((r) => r !== q);
+                          try {
+                            window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+                          } catch {
+                            // ignore
+                          }
+                          setRecent(next);
+                        }}
+                        aria-label={`Usuń „${q}" z ostatnich wyszukiwań`}
+                        className="px-3 py-2 text-muted-foreground/40 hover:text-foreground transition-colors"
+                      >
+                        <X className="size-3.5" aria-hidden="true" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="px-6 py-10 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Zacznij pisać aby odnaleźć tematy o sztucznej inteligencji...
+                </p>
+              </div>
+            )
           ) : results.length > 0 ? (
             <div className="flex flex-col">
               {results.map((result) => (
                 <Link
                   key={result.id}
                   href={`/artykul/${result.slug}`}
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => {
+                    commitRecent(query);
+                    onOpenChange(false);
+                  }}
                   className="px-4 py-3 hover:bg-muted/50 transition-colors flex items-start gap-4 group border-b border-border/20 last:border-0"
                 >
                   <div className="flex-1 min-w-0">

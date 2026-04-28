@@ -87,7 +87,13 @@ export default function SearchPage() {
       {results.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2">
           {results.map((article, i) => (
-            <div key={article.id} className={`animate-fade-in-up stagger-${i + 1}`}>
+            <div
+              key={article.id}
+              className="animate-fade-in-up"
+              // Cap the stagger at 6 so the 7th+ result doesn't wait nearly
+              // half a second to appear; visually identical past that point.
+              style={{ "--stagger": Math.min(i, 6) } as React.CSSProperties}
+            >
               <ArticleCard article={article} />
             </div>
           ))}
@@ -95,8 +101,8 @@ export default function SearchPage() {
       ) : searched && !loading ? (
         <EmptyState
           icon={FileQuestion}
-          title="Żadne artykuły nie zostały znalezione."
-          description="Spróbuj wpisać inne hasło."
+          title={`Nic nie znaleźliśmy dla „${query}".`}
+          description="Sprawdź pisownię, użyj krótszej frazy albo przejrzyj kategorie z menu."
         />
       ) : null}
     </div>

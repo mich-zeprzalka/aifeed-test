@@ -37,13 +37,16 @@ async function attachTagsBatch(
     return articles.map((a) => ({ ...a, tags: [] }));
   }
 
+  // PostgREST returns the joined `tag:tags(*)` row as `Tag | Tag[] | null`
+  // depending on the join arity. We coerce through `unknown` to a narrow
+  // local type instead of `any` so the rest of the function stays typed.
+  type TagJoinRow = { article_id: string; tag: Tag | Tag[] | null };
   const tagMap = new Map<string, Tag[]>();
-  for (const row of tagRows || []) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tag = (row as any).tag as Tag | null;
-    if (!tag) continue;
+  for (const row of (tagRows || []) as unknown as TagJoinRow[]) {
+    if (!row.tag) continue;
+    const tags = Array.isArray(row.tag) ? row.tag : [row.tag];
     const existing = tagMap.get(row.article_id) || [];
-    existing.push(tag);
+    existing.push(...tags);
     tagMap.set(row.article_id, existing);
   }
 
@@ -598,6 +601,68 @@ export async function getRelatedArticles(
   }
 
   return [];
+}
+
+// ===================== SITEMAP HELPERS =====================
+
+/**
+ * Per-category max(updated_at). Used by sitemap.ts so each category URL gets
+ * a `lastModified` reflecting its actual content. Without this, every crawl
+ * sees `new Date()` and Google wastes budget on un-changed pages.
+ */
+export async function getCategoriesLastModified(): Promise<Record<string, Date>> {
+  const { data, error } = await db()
+    .from("articles")
+    .select("category_id, updated_at, categories!inner(slug)")
+    .eq("is_published", true)
+    .order("updated_at", { ascending: false });
+
+  if (error || !data) return {};
+
+  type CategoryJoinRow = {
+    updated_at: string;
+    categories: { slug: string } | { slug: string }[] | null;
+  };
+  const seen = new Map<string, Date>();
+  for (const row of data as unknown as CategoryJoinRow[]) {
+    const cats = Array.isArray(row.categories) ? row.categories : row.categories ? [row.categories] : [];
+    for (const cat of cats) {
+      if (!cat?.slug) continue;
+      if (!seen.has(cat.slug)) seen.set(cat.slug, new Date(row.updated_at));
+    }
+  }
+  return Object.fromEntries(seen);
+}
+
+/**
+ * Per-tag max(updated_at) — same purpose as the category variant above.
+ */
+export async function getTagsLastModified(): Promise<Record<string, Date>> {
+  const { data, error } = await db()
+    .from("article_tags")
+    .select("tag:tags(slug), article:articles!inner(updated_at, is_published)")
+    .order("article(updated_at)", { ascending: false });
+
+  if (error || !data) return {};
+
+  type ArticleJoin = { updated_at: string; is_published: boolean };
+  type TagJoin = { slug: string };
+  type Row = {
+    tag: TagJoin | TagJoin[] | null;
+    article: ArticleJoin | ArticleJoin[] | null;
+  };
+  const seen = new Map<string, Date>();
+  for (const row of data as unknown as Row[]) {
+    const articles = Array.isArray(row.article) ? row.article : row.article ? [row.article] : [];
+    const tags = Array.isArray(row.tag) ? row.tag : row.tag ? [row.tag] : [];
+    const article = articles[0];
+    if (!article || article.is_published === false) continue;
+    for (const tag of tags) {
+      if (!tag?.slug) continue;
+      if (!seen.has(tag.slug)) seen.set(tag.slug, new Date(article.updated_at));
+    }
+  }
+  return Object.fromEntries(seen);
 }
 
 // ===================== ALL TAGS (for sitemap) =====================

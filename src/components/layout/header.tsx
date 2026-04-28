@@ -37,7 +37,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <header id="primary-nav" className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo — also works as scroll-to-top when already on the home page
               (Next.js skips the route change when href matches current path,
@@ -92,11 +92,11 @@ export function Header() {
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors md:hidden"
-              aria-label="Menu"
+              aria-label={mobileOpen ? "Zamknij menu" : "Otwórz menu"}
               aria-expanded={mobileOpen}
               aria-controls="mobile-nav"
             >
-              {mobileOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+              {mobileOpen ? <X className="size-4" aria-hidden="true" /> : <Menu className="size-4" aria-hidden="true" />}
             </button>
           </div>
         </div>

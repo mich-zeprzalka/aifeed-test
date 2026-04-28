@@ -96,7 +96,11 @@ export default async function TagPage({ params }: PageProps) {
       {articles.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {articles.map((article, i) => (
-            <div key={article.id} className={`animate-fade-in-up stagger-${i + 1}`}>
+            <div
+              key={article.id}
+              className="animate-fade-in-up"
+              style={{ "--stagger": Math.min(i + 1, 6) } as React.CSSProperties}
+            >
               <ArticleCard article={article} />
             </div>
           ))}

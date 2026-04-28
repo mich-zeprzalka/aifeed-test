@@ -3,10 +3,16 @@ export const siteConfig = {
   description:
     "Twoje codzienne źródło wiadomości o sztucznej inteligencji, badaniach naukowych i nowościach z branży technologicznej.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://aifeed.pl",
-  ogImage: "/og-image.png",
+  // Resolved at runtime by the file-convention OG route at
+  // app/opengraph-image.tsx. Kept for layouts that still need a deterministic
+  // path, e.g. the RSS image and the manifest fallbacks.
+  ogImage: "/opengraph-image",
+  // Empty until real social profiles exist. Once founded, fill in and they
+  // automatically populate JSON-LD `Organization.sameAs` and the `via=`
+  // parameter on Twitter/X share intents.
   links: {
-    twitter: "https://twitter.com/aifeed",
-    github: "https://github.com/aifeed",
+    twitter: "",
+    github: "",
   },
   categories: [
     { name: "Modele AI", slug: "modele-ai", color: "#6366f1", description: "Premiery, aktualizacje i porównania modeli AI" },

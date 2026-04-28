@@ -99,11 +99,16 @@ export function NewsTicker({ items }: NewsTickerProps) {
 
   return (
     <aside
-      aria-label="Najnowsze artykuły"
+      aria-labelledby="news-ticker-heading"
       className="border-b border-border bg-foreground overflow-hidden"
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
     >
+      {/* Visually-hidden landmark heading. Screen readers can jump to the
+          ticker by region; sighted users still see the marquee directly. */}
+      <h2 id="news-ticker-heading" className="sr-only">
+        Najnowsze artykuły
+      </h2>
       <div ref={trackRef} className="flex w-max will-change-transform">
         {[0, 1].map((copy) => (
           <div

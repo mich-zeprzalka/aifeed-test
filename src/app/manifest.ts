@@ -11,15 +11,21 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#6366f1",
     lang: "pl",
     icons: [
+      // URLs resolve to ImageResponse PNGs from app/icon-192/route.tsx and
+      // app/icon-512/route.tsx. The folder names intentionally omit the
+      // `.png` extension — Next.js' metadata file scanner can collide with
+      // dot-extension folder names in dev mode and 500 the route.
       {
-        src: "/icon-192.png",
+        src: "/icon-192",
         sizes: "192x192",
         type: "image/png",
+        purpose: "any",
       },
       {
-        src: "/icon-512.png",
+        src: "/icon-512",
         sizes: "512x512",
         type: "image/png",
+        purpose: "any",
       },
     ],
   };

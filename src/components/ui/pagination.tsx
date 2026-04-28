@@ -16,6 +16,13 @@ function hrefForPage(basePath: string, page: number): string {
   return page <= 1 ? basePath : `${basePath}?page=${page}`;
 }
 
+const baseStyle =
+  "inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors";
+const activeStyle =
+  "border-border/50 bg-card text-muted-foreground hover:text-foreground hover:bg-muted";
+const disabledStyle =
+  "border-border/30 text-muted-foreground/40 cursor-not-allowed";
+
 export function Pagination({
   basePath,
   page,
@@ -32,7 +39,7 @@ export function Pagination({
       aria-label="Paginacja"
       className={cn("flex items-center justify-between gap-4 pt-10", className)}
     >
-      <div className="text-[12px] font-mono text-muted-foreground/60">
+      <div className="text-[12px] font-mono text-muted-foreground/85">
         {total > 0 && `${total} artykuł${total === 1 ? "" : total < 5 ? "y" : "ów"} · str. ${page}/${totalPages}`}
       </div>
 
@@ -41,38 +48,48 @@ export function Pagination({
           <Link
             href={hrefForPage(basePath, page - 1)}
             rel="prev"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-card px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Przejdź do nowszych artykułów"
+            className={cn(baseStyle, activeStyle)}
           >
-            <ChevronLeft className="size-3.5" />
+            <ChevronLeft className="size-3.5" aria-hidden="true" />
             Nowsze
           </Link>
         ) : (
-          <span
-            aria-disabled="true"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border/30 px-3.5 py-2 text-sm font-medium text-muted-foreground/40 cursor-not-allowed"
+          // Disabled <button> instead of <span aria-disabled>: the span is
+          // skipped by keyboard navigation and screen readers don't hint that
+          // it's an actionable control. <button disabled> is the WCAG-correct
+          // pattern.
+          <button
+            type="button"
+            disabled
+            aria-label="Brak nowszych artykułów"
+            className={cn(baseStyle, disabledStyle)}
           >
-            <ChevronLeft className="size-3.5" />
+            <ChevronLeft className="size-3.5" aria-hidden="true" />
             Nowsze
-          </span>
+          </button>
         )}
 
         {hasNext ? (
           <Link
             href={hrefForPage(basePath, page + 1)}
             rel="next"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-card px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Przejdź do starszych artykułów"
+            className={cn(baseStyle, activeStyle)}
           >
             Starsze
-            <ChevronRight className="size-3.5" />
+            <ChevronRight className="size-3.5" aria-hidden="true" />
           </Link>
         ) : (
-          <span
-            aria-disabled="true"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border/30 px-3.5 py-2 text-sm font-medium text-muted-foreground/40 cursor-not-allowed"
+          <button
+            type="button"
+            disabled
+            aria-label="Brak starszych artykułów"
+            className={cn(baseStyle, disabledStyle)}
           >
             Starsze
-            <ChevronRight className="size-3.5" />
-          </span>
+            <ChevronRight className="size-3.5" aria-hidden="true" />
+          </button>
         )}
       </div>
     </nav>

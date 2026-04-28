@@ -29,11 +29,14 @@ interface TableOfContentsProps {
 export function TableOfContents({ content }: TableOfContentsProps) {
   const headings = useMemo(() => extractHeadings(content), [content]);
 
-  if (headings.length < 3) return null;
+  // Threshold lowered from 3 to 2: a 2-section article still benefits from
+  // visible structure ("here's what's covered") and the navigation cost of
+  // showing two anchors is essentially zero.
+  if (headings.length < 2) return null;
 
   return (
     <nav aria-label="Spis treści" className="mb-10">
-      <h2 className="mb-3 text-[11px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+      <h2 id="spis-tresci" className="mb-3 text-[11px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
         Spis treści
       </h2>
       <ol className="space-y-1.5">
