@@ -161,7 +161,7 @@ export function NewsTicker({ items }: NewsTickerProps) {
   return (
     <aside
       aria-labelledby="news-ticker-heading"
-      className="border-b border-border bg-foreground overflow-hidden"
+      className="border-b border-border bg-foreground overflow-hidden p-1"
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
     >
@@ -187,7 +187,7 @@ export function NewsTicker({ items }: NewsTickerProps) {
           >
             <Link
               href={`/artykul/${item.slug}`}
-              className="py-1.5 text-xs text-background/70 hover:text-background transition-colors"
+              className="py-1.5 text-sm text-background/70 hover:text-background transition-colors"
             >
               {item.title}
             </Link>
