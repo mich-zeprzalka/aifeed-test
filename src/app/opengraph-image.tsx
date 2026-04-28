@@ -1,9 +1,24 @@
 import { ImageResponse } from "next/og";
 import { siteConfig } from "@/config/site";
 
-// Default social-share card. Replaces the missing /public/og-image.png file.
-// Per-article variants live in app/artykul/[slug]/opengraph-image.tsx and
-// override this for individual articles.
+// Default brand card — używana gdy strona nie ma własnego `image` w metadata
+// (home, kategoria, tag, statyczne, artykuły bez `thumbnail_url`). Per-artykuł
+// social-share używa `article.thumbnail_url` z DB (zob. `articleMetadata` w
+// `lib/seo.ts`).
+//
+// Paleta dopasowana do `globals.css :root` (light theme — większość czytników
+// social ma białe tło, więc light card lepiej blenduje):
+//   --background:        oklch(0.99 0.001 260)  ≈ #fafafa
+//   --foreground:        oklch(0.12 0.02 260)   ≈ #1c1d2e
+//   --muted-foreground:  oklch(0.46 0.015 260)  ≈ #6b7080
+//   --primary:           oklch(0.50 0.24 270)   ≈ #5b3df7
+// Satori (silnik next/og) NIE wspiera oklch — wartości muszą być hex/rgb.
+
+const COLOR_BACKGROUND = "#fafafa";
+const COLOR_FOREGROUND = "#1c1d2e";
+const COLOR_MUTED = "#6b7080";
+const COLOR_PRIMARY = "#5b3df7";
+
 export const alt = "AiFeed — codzienne wiadomości o sztucznej inteligencji";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -15,62 +30,46 @@ export default async function OpenGraphImage() {
         style={{
           width: "100%",
           height: "100%",
-          background: "linear-gradient(135deg, #1a1330 0%, #2d1b5e 50%, #4c2dd9 100%)",
+          background: COLOR_BACKGROUND,
           display: "flex",
           flexDirection: "column",
+          justifyContent: "space-between",
           padding: "80px",
           fontFamily: "system-ui, sans-serif",
-          color: "white",
+          color: COLOR_FOREGROUND,
           position: "relative",
         }}
       >
-        {/* Brand mark */}
+        {/* Tag bar — uppercase mono-style, wskazuje typ contentu */}
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: "16px",
-            fontSize: 36,
-            fontWeight: 800,
-            letterSpacing: -1,
+            fontSize: 18,
+            fontWeight: 700,
+            letterSpacing: 4,
+            textTransform: "uppercase",
+            color: COLOR_PRIMARY,
           }}
         >
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              background: "rgba(255,255,255,0.15)",
-              border: "2px solid rgba(255,255,255,0.25)",
-              borderRadius: 12,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 32,
-              fontWeight: 800,
-              letterSpacing: -2,
-            }}
-          >
-            a.
-          </div>
-          aifeed.pl
+          Wiadomości AI · Badania · Raporty
         </div>
 
-        {/* Headline */}
+        {/* Headline + description — główna treść karty */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            marginTop: "auto",
-            gap: "20px",
+            gap: 24,
           }}
         >
           <div
             style={{
-              fontSize: 78,
+              fontSize: 84,
               fontWeight: 800,
               lineHeight: 1.05,
-              letterSpacing: -2.5,
-              maxWidth: "90%",
+              letterSpacing: -3,
+              maxWidth: "92%",
+              color: COLOR_FOREGROUND,
             }}
           >
             Codzienne wiadomości o sztucznej inteligencji
@@ -78,24 +77,38 @@ export default async function OpenGraphImage() {
           <div
             style={{
               fontSize: 28,
-              color: "rgba(255,255,255,0.78)",
+              color: COLOR_MUTED,
               lineHeight: 1.4,
-              maxWidth: "75%",
+              maxWidth: "78%",
             }}
           >
             {siteConfig.description}
           </div>
         </div>
 
-        {/* Bottom accent bar */}
+        {/* Wordmark — same pattern jak w `components/layout/header.tsx`:
+            `aifeed` w foreground + kropka w primary. Brak graficznego logo. */}
+        <div
+          style={{
+            display: "flex",
+            fontSize: 32,
+            fontWeight: 800,
+            letterSpacing: -1,
+            color: COLOR_FOREGROUND,
+          }}
+        >
+          aifeed<span style={{ color: COLOR_PRIMARY }}>.</span>
+        </div>
+
+        {/* Bottom accent bar — solid primary, jak border-bottom headera */}
         <div
           style={{
             position: "absolute",
             bottom: 0,
             left: 0,
             right: 0,
-            height: 8,
-            background: "linear-gradient(90deg, #f472b6 0%, #8b5cf6 50%, #38bdf8 100%)",
+            height: 6,
+            background: COLOR_PRIMARY,
           }}
         />
       </div>
