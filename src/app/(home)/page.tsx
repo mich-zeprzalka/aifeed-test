@@ -1,7 +1,8 @@
-import { ArrowRight, TrendingUp } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArticleCard } from "@/components/articles/article-card";
+import { TrendingTags } from "@/components/layout/trending-tags";
 import { siteConfig } from "@/config/site";
 import {
   getArticlesGroupedByCategory,
@@ -60,28 +61,7 @@ export default async function HomePage() {
           designed later. */}
       <h1 className="sr-only">AiFeed — wiadomości AI, badania i raporty po polsku</h1>
 
-      {/* Trending Tags */}
-      {trendingTags.length > 0 && (
-        <div className="border-b border-border/30">
-          <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8 flex items-center gap-3 overflow-x-auto no-scrollbar">
-            <div className="flex shrink-0 items-center gap-1 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest">
-              <TrendingUp className="size-3" />
-              Trendy
-            </div>
-            <div className="flex items-center gap-2">
-              {trendingTags.map((tag) => (
-                <Link
-                  key={tag.id}
-                  href={`/tag/${tag.slug}`}
-                  className="shrink-0 rounded-full bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <span className="text-primary/60 mr-0.5">#</span>{tag.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <TrendingTags tags={trendingTags} />
 
       {/* Hero — 1 latest article from each of the top 5 categories */}
       {hero && (
